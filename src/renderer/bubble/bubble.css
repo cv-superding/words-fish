@@ -1,0 +1,64 @@
+:root {
+  --bg: rgba(255, 255, 255, 0.96);
+  --text: #1a1f2c;
+  --soft: #5f6577;
+  --mute: #8c93a3;
+  --accent: #0f7b6c;
+  --border: rgba(0, 0, 0, 0.08);
+  --shadow: 0 8px 28px rgba(15, 28, 41, 0.18);
+}
+[data-theme="dark"] {
+  --bg: rgba(22, 25, 34, 0.96);
+  --text: #e9ecf3;
+  --soft: #b6bbc8;
+  --mute: #7c8294;
+  --accent: #2dc4a6;
+  --border: rgba(255, 255, 255, 0.10);
+  --shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%;
+  background: transparent;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  -webkit-user-select: none; user-select: none;
+  overflow: hidden;
+}
+#root {
+  height: 100vh;
+  display: flex; flex-direction: column;
+  gap: 6px;
+  background: var(--bg);
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  padding: 12px 14px;
+  color: var(--text);
+  transition: opacity 0.3s ease;
+  -webkit-app-region: no-drag;
+}
+#root.fading { opacity: 0; }
+.head { display: flex; justify-content: space-between; font-size: 11px; color: var(--mute); }
+.head .brand { color: var(--soft); font-weight: 600; }
+.head .src { color: var(--accent); }
+.word { font-size: 22px; font-weight: 700; letter-spacing: 0.5px; }
+.phonetic { font-size: 12px; color: var(--mute); font-family: 'Segoe UI Symbol', 'Times New Roman', serif; }
+.phonetic .label { color: var(--mute); font-size: 10px; margin-right: 3px; }
+.phonetic .sep { opacity: 0.5; margin: 0 6px; }
+.meanings { display: flex; flex-direction: column; gap: 2px; font-size: 13px; line-height: 1.45; }
+.meanings .pos { color: var(--mute); font-style: italic; margin-right: 5px; font-size: 11px; }
+.footer { display: flex; gap: 6px; margin-top: 6px; }
+.btn {
+  flex: 1;
+  border: 0;
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--text);
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.btn:hover { background: var(--accent); color: white; }
+.btn.know { background: rgba(15, 158, 117, 0.16); color: #0f9e75; }
+.btn.know:hover { background: #0f9e75; color: white; }
+.btn.open { flex: 0 0 36px; }

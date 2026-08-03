@@ -1,0 +1,32 @@
+{
+  "books": [
+    {
+      "id": "cet4",
+      "name": "四级核心词汇",
+      "tag": "CET-4",
+      "count": 1162,
+      "builtin": true
+    },
+    {
+      "id": "cet6",
+      "name": "六级核心词汇",
+      "tag": "CET-6",
+      "count": 1228,
+      "builtin": true
+    },
+    {
+      "id": "kaoyan",
+      "name": "考研核心词汇",
+      "tag": "考研",
+      "count": 1341,
+      "builtin": true
+    },
+    {
+      "id": "ielts",
+      "name": "雅思核心词汇",
+      "tag": "IELTS",
+      "count": 3427,
+      "builtin": true
+    }
+  ]
+}

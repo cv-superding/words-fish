@@ -1,0 +1,55 @@
+# ===== 依赖 =====
+node_modules/
+jspm_packages/
+
+# ===== 构建产物 =====
+release/
+dist/
+out/
+build/
+*.exe
+*.dmg
+*.AppImage
+*.deb
+*.rpm
+*.zip
+*.7z
+*.tar.gz
+*.blockmap
+*.snap
+*.sig
+
+# ===== Electron =====
+.electron-cache/
+electron-builder-cache/
+.cache/
+*.log
+
+# ===== 测试 / 临时 =====
+.tmp/
+tests/_scratch/
+tests/dict-import/
+coverage/
+.nyc_output/
+*.tmp
+
+# ===== WorkBuddy 私有（不参与开源）=====
+.workbuddy/
+
+# ===== 编辑器 / 系统 =====
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+.directory
+*.lnk
+
+# ===== 环境变量 =====
+.env
+.env.local
+.env.*.local

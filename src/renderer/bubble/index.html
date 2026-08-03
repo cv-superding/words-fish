@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self';" />
+  <title>摸鱼背单词 · 气泡</title>
+  <link rel="stylesheet" href="bubble.css" />
+</head>
+<body data-theme="light">
+  <div id="root">
+    <div class="head">
+      <span class="brand" id="brand">摸鱼背单词</span>
+      <span class="src" id="src">新词</span>
+    </div>
+    <div class="word" id="word">abandon</div>
+    <div class="phonetic" id="phonetic"></div>
+    <div class="meanings" id="meanings"></div>
+    <div class="footer">
+      <button class="btn skip" id="btn-skip">⏭ 跳过</button>
+      <button class="btn know" id="btn-know">✓ 记住了</button>
+      <button class="btn open" id="btn-open" title="打开悬浮窗">↗</button>
+    </div>
+  </div>
+  <script src="bubble.js"></script>
+</body>
+</html>

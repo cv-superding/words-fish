@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self';" />
+  <title>摸鱼背单词 · 设置</title>
+  <link rel="stylesheet" href="settings.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="titlebar">
+      <div class="t-left">
+        <span class="logo"></span>
+        <span class="title">摸鱼背单词 · 设置</span>
+      </div>
+      <div class="t-right">
+        <span class="status" id="status-line">就绪</span>
+        <button id="btn-minimize" title="最小化">—</button>
+        <button id="btn-close" title="关闭">×</button>
+      </div>
+    </header>
+
+    <aside class="sidebar">
+      <nav>
+        <a class="nav-item active" data-go="general"><span class="ico">⚙</span>通用设置</a>
+        <a class="nav-item" data-go="study"><span class="ico">📚</span>词库与学习</a>
+        <a class="nav-item" data-go="push"><span class="ico">⏰</span>推送与通知</a>
+        <a class="nav-item" data-go="appearance"><span class="ico">🎨</span>悬浮窗外观</a>
+        <a class="nav-item" data-go="hotkey"><span class="ico">⌨</span>全局快捷键</a>
+        <a class="nav-item" data-go="gesture"><span class="ico">🖱</span>手势映射</a>
+        <a class="nav-item" data-go="about"><span class="ico">📊</span>统计与关于</a>
+      </nav>
+      <div class="sidebar-foot">
+        <button id="btn-save-close">保存并关闭</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <!-- 通用设置 -->
+      <section class="page active" id="page-general">
+        <h2>通用设置</h2>
+        <div class="setting-row">
+          <div class="setting-info"><h3>开机自启</h3><p>登录 Windows 后自动启动（默认最小化到托盘）。</p></div>
+          <label class="switch"><input type="checkbox" data-cfg="general.autoLaunch" /><span></span></label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info"><h3>启动时最小化到托盘</h3><p>开启后只显示托盘图标，不弹出设置窗口。</p></div>
+          <label class="switch"><input type="checkbox" data-cfg="general.startMinimized" /><span></span></label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info"><h3>关闭按钮最小化到托盘</h3><p>关闭按钮只隐藏窗口，不退出进程。</p></div>
+          <label class="switch"><input type="checkbox" data-cfg="general.closeToTray" /><span></span></label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info"><h3>托盘显示今日计数</h3><p>在托盘悬浮提示里显示今日看过的单词数。</p></div>
+          <label class="switch"><input type="checkbox" data-cfg="general.showTrayCount" /><span></span></label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info"><h3>打开数据目录</h3><p>查看 / 备份 config.json、records.json、自定义词库。</p></div>
+          <button class="btn" id="btn-open-data">打开目录</button>
+        </div>
+      </section>
+
+      <!-- 词库与学习 -->
+      <section class="page" id="page-study">
+        <h2>词库与学习</h2>
+        <div class="card">
+          <div class="card-hd">
+            <h3>选择当前词库</h3>
+            <div class="card-actions">
+              <button class="btn" id="btn-import-dict">导入词库</button>
+            </div>
+          </div>
+          <div class="book-list" id="book-list"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-hd"><h3>学习目标与策略</h3></div>
+          <div class="form-grid">
+            <label class="field">
+              <span class="label">每日学习目标</span>
+              <input type="number" min="5" max="200" step="5" data-cfg="study.dailyGoal" />
+            </label>
+            <label class="field">
+              <span class="label">新词比例（0~1）</span>
+              <input type="number" min="0" max="1" step="0.05" data-cfg="study.newWordRatio" />
+            </label>
+            <label class="field switch-field">
+              <span class="label">启用复习算法（SM2+）</span>
+              <label class="switch"><input type="checkbox" data-cfg="study.reviewEnabled" /><span></span></label>
+            </label>
+            <label class="field switch-field">
+              <span class="label">生词优先复现</span>
+              <label class="switch"><input type="checkbox" data-cfg="study.priorityMarked" /><span></span></label>
+            </label>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-hd"><h3>重置学习进度</h3></div>
+          <p class="muted">清除当前词库的已学 / 复习 / 生词记录（不会删除自定义词库文件）。</p>
+          <button class="btn danger" id="btn-reset-progress">清空当前词库进度</button>
+        </div>
+      </section>
+
+      <!-- 推送与通知 -->
+      <section class="page" id="page-push">
+        <h2>推送与通知</h2>
+        <div class="card">
+          <div class="card-hd"><h3>定时推送</h3></div>
+          <div class="form-grid">
+            <label class="field switch-field">
+              <span class="label">启用定时推送</span>
+              <label class="switch"><input type="checkbox" data-cfg="push.enabled" /><span></span></label>
+            </label>
+            <label class="field">
+              <span class="label">推送方式</span>
+              <select data-cfg="push.channel">
+                <option value="bubble">托盘气泡（推荐，自绘，不抢焦点）</option>
+                <option value="system">Windows 系统通知</option>
+                <option value="popup">直接弹出悬浮窗</option>
+              </select>
+            </label>
+            <label class="field">
+              <span class="label">推送间隔（分钟）</span>
+              <input type="number" min="1" max="240" step="1" data-cfg="push.intervalMin" />
+            </label>
+            <label class="field">
+              <span class="label">随机浮动 ±（分钟）</span>
+              <input type="number" min="0" max="20" step="1" data-cfg="push.jitterMin" />
+            </label>
+            <label class="field">
+              <span class="label">气泡停留（秒，0=不自动关）</span>
+              <input type="number" min="0" max="120" step="1" data-cfg="push.bubbleDurationSec" />
+            </label>
+            <label class="field switch-field">
+              <span class="label">Windows 系统通知静音</span>
+              <label class="switch"><input type="checkbox" data-cfg="push.silent" /><span></span></label>
+            </label>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-hd"><h3>免打扰</h3></div>
+          <div class="form-grid">
+            <label class="field switch-field">
+              <span class="label">仅工作日推送</span>
+              <label class="switch"><input type="checkbox" data-cfg="push.workdayOnly" /><span></span></label>
+            </label>
+            <label class="field switch-field">
+              <span class="label">检测到全屏应用时暂停</span>
+              <label class="switch"><input type="checkbox" data-cfg="push.pauseWhenFullscreen" /><span></span></label>
+            </label>
+            <label class="field switch-field">
+              <span class="label">启用免打扰时段</span>
+              <label class="switch"><input type="checkbox" data-cfg="push.quietHours.enabled" /><span></span></label>
+            </label>
+            <label class="field">
+              <span class="label">免打扰开始</span>
+              <input type="time" data-cfg="push.quietHours.start" />
+            </label>
+            <label class="field">
+              <span class="label">免打扰结束</span>
+              <input type="time" data-cfg="push.quietHours.end" />
+            </label>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-hd"><h3>手动测试</h3></div>
+          <div class="action-row">
+            <button class="btn primary" id="btn-push-now">立即推一个单词</button>
+            <button class="btn" id="btn-pause-1h">临时静默 1 小时</button>
+            <button class="btn" id="btn-resume-push">恢复推送</button>
+            <span class="status" id="push-status">就绪</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 悬浮窗外观 -->
+      <section class="page" id="page-appearance">
+        <h2>悬浮窗外观</h2>
+        <div class="card">
+          <div class="card-hd"><h3>主题</h3></div>
+          <div class="theme-grid" id="theme-grid"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-hd"><h3>布局与内容</h3></div>
+          <div class="form-grid">
+            <label class="field">
+              <span class="label">宽度（px）</span>
+              <input type="number" min="280" max="640" step="10" data-cfg="popup.width" />
+            </label>
+            <label class="field">
+              <span class="label">字号（px）</span>
+              <input type="number" min="11" max="22" step="1" data-cfg="popup.fontSize" />
+            </label>
+            <label class="field">
+              <span class="label">透明度（0~1）</span>
+              <input type="number" min="0.4" max="1" step="0.02" data-cfg="popup.opacity" />
+            </label>
+            <label class="field switch-field">
+              <span class="label">显示音标</span>
+              <label class="switch"><input type="checkbox" data-cfg="popup.showPhonetic" /><span></span></label>
+            </label>
+            <label class="field switch-field">
+              <span class="label">显示例句</span>
+              <label class="switch"><input type="checkbox" data-cfg="popup.showSentence" /><span></span></label>
+            </label>
+            <label class="field switch-field">
+              <span class="label">显示短语</span>
+              <label class="switch"><input type="checkbox" data-cfg="popup.showPhrase" /><span></span></label>
+            </label>
+            <label class="field switch-field">
+              <span class="label">显示进度</span>
+              <label class="switch"><input type="checkbox" data-cfg="popup.showProgress" /><span></span></label>
+            </label>
+            <label class="field switch-field">
+              <span class="label">记住悬浮窗位置</span>
+              <label class="switch"><input type="checkbox" data-cfg="popup.rememberPosition" /><span></span></label>
+            </label>
+            <label class="field switch-field">
+              <span class="label">自测模式：先隐藏释义</span>
+              <label class="switch"><input type="checkbox" data-cfg="popup.meaningHidden" /><span></span></label>
+            </label>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-hd"><h3>预览</h3></div>
+          <div class="preview-wrap">
+            <div id="preview-host"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 全局快捷键 -->
+      <section class="page" id="page-hotkey">
+        <h2>全局快捷键</h2>
+        <p class="muted">点击输入框按下组合键进行录制。Shift+X 默认为呼出单词悬浮窗。</p>
+        <div class="card">
+          <div id="hotkey-list" class="hotkey-list"></div>
+          <p class="muted small" id="hotkey-warning"></p>
+        </div>
+      </section>
+
+      <!-- 手势映射 -->
+      <section class="page" id="page-gesture">
+        <h2>悬浮窗手势映射</h2>
+        <p class="muted">把鼠标手势映射为具体动作。单击与双击会互相抢占，配置时建议二选一。</p>
+        <div class="card">
+          <div id="gesture-list" class="gesture-list"></div>
+        </div>
+      </section>
+
+      <!-- 统计与关于 -->
+      <section class="page" id="page-about">
+        <h2>统计与关于</h2>
+        <div class="card">
+          <div class="card-hd"><h3>学习统计</h3></div>
+          <div class="stat-grid" id="stat-grid"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-hd"><h3>近 14 天</h3></div>
+          <div class="trend" id="trend"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-hd"><h3>生词本</h3></div>
+          <div class="marked-list" id="marked-list">
+            <div class="muted">（暂无生词）</div>
+          </div>
+        </div>
+
+        <div class="card about">
+          <h3>摸鱼背单词 <span class="ver" id="version">v0.1</span></h3>
+          <p>Windows 桌面碎片化背单词工具，基于 Electron 33。</p>
+          <p class="muted small">内置词库来自 <a href="https://github.com/kajweb/dict" target="_blank">kajweb/dict</a>（有道词典 CC BY-NC-SA）。仅供学习用途。</p>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="settings.js"></script>
+</body>
+</html>

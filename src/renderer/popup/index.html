@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self';" />
+  <title>摸鱼背单词</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body data-theme="light">
+  <div id="root">
+    <div class="dragbar">
+      <div class="brand">摸鱼背单词</div>
+      <div class="progress" id="progress"></div>
+      <button class="pin" id="btn-pin" title="钉住窗口">📌</button>
+      <button class="close" id="btn-close" title="关闭">×</button>
+    </div>
+
+    <main id="content">
+      <div class="meaning-panel" id="meaning-panel"></div>
+    </main>
+
+    <footer class="actions">
+      <button class="act unknown" id="btn-unknown" title="标记为生词">生词</button>
+      <button class="act reveal" id="btn-reveal" title="显示/隐藏释义">显示释义</button>
+      <button class="act known" id="btn-known" title="记住了">记住</button>
+      <button class="act next" id="btn-next" title="下一个 (Shift+C)">下一个</button>
+    </footer>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

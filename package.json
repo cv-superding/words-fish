@@ -1,0 +1,77 @@
+{
+  "name": "words-fish",
+  "version": "1.0.0",
+  "description": "摸鱼背单词 - Windows 桌面碎片化英语单词记忆工具（托盘通知 + 全局快捷键悬浮窗）",
+  "main": "src/main/main.js",
+  "author": "cv-superding",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/cv-superding/words-fish",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cv-superding/words-fish.git"
+  },
+  "bugs": {
+    "url": "https://github.com/cv-superding/words-fish/issues"
+  },
+  "keywords": [
+    "electron",
+    "vocabulary",
+    "tray",
+    "global-shortcut",
+    "windows",
+    "srs",
+    "sm2",
+    "spaced-repetition",
+    "english",
+    "moyu",
+    "desktop-app"
+  ],
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "pack": "electron-builder --win --dir",
+    "build": "electron-builder --win",
+    "build:dict": "node scripts/build-dict.js",
+    "build:icons": "node scripts/gen-icons.js",
+    "test": "node tests/logic-test.js && node tests/verify-headless.js",
+    "test:logic": "node tests/logic-test.js",
+    "test:integration": "node tests/verify-headless.js"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.wordsfish.app",
+    "productName": "WordsFish",
+    "copyright": "Copyright © 2026 cv-superding",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "data/**/*",
+      "package.json",
+      "LICENSE",
+      "README.md"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "摸鱼背单词"
+    }
+  }
+}
