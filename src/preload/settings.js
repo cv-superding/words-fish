@@ -54,6 +54,11 @@ contextBridge.exposeInMainWorld('wfSettings', {
     setAutoLaunch: (flag) => invoke('app:setAutoLaunch', flag),
     platform: process.platform,
   },
+  knowledge: {
+    test: () => invoke('knowledge:test'),
+    status: () => invoke('knowledge:status'),
+    presets: () => invoke('knowledge:presets'),
+  },
 
   onConfigChanged: (fn) => on('config:changed', fn),
   onStats: (fn) => on('stats:update', fn),

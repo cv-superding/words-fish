@@ -33,6 +33,7 @@ const HOTKEY_ITEMS = [
   { key: 'markUnknown', label: '把当前单词标记为生词', default: 'Shift+Z' },
   { key: 'toggleMeaning', label: '显示 / 隐藏释义', default: '' },
   { key: 'openSettings', label: '打开设置面板', default: '' },
+  { key: 'openKnowledge', label: '打开 AI 知识学习', default: 'Shift+K' },
   { key: 'panic', label: '一键隐藏全部窗口（老板键）', default: 'Shift+Esc' },
 ];
 

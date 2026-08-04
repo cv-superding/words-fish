@@ -33,9 +33,10 @@
     "build": "electron-builder --win",
     "build:dict": "node scripts/build-dict.js",
     "build:icons": "node scripts/gen-icons.js",
-    "test": "node tests/logic-test.js && node tests/verify-headless.js",
+    "test": "node tests/logic-test.js && node tests/verify-headless.js && node tests/llm-test.js",
     "test:logic": "node tests/logic-test.js",
-    "test:integration": "node tests/verify-headless.js"
+    "test:integration": "node tests/verify-headless.js",
+    "test:llm": "node tests/llm-test.js"
   },
   "devDependencies": {
     "electron": "^33.2.0",

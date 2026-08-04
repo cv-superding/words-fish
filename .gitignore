@@ -29,6 +29,7 @@ electron-builder-cache/
 .tmp/
 tests/_scratch/
 tests/dict-import/
+tests/verify-report.txt
 coverage/
 .nyc_output/
 *.tmp

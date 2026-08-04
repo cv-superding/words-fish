@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self';" />
+  <title>摸鱼背单词 · AI 知识学习</title>
+  <link rel="stylesheet" href="knowledge.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="titlebar">
+      <div class="t-left">
+        <span class="logo"></span>
+        <span class="title">AI 知识学习</span>
+      </div>
+      <div class="t-right">
+        <span class="status" id="status-line">就绪</span>
+        <button id="btn-minimize" title="最小化">—</button>
+        <button id="btn-close" title="关闭">×</button>
+      </div>
+    </header>
+
+    <aside class="sidebar">
+      <div class="side-section">
+        <div class="side-title">选择领域</div>
+        <div class="domain-chips" id="domain-chips"></div>
+        <div class="custom-domain">
+          <input type="text" id="custom-domain-input" placeholder="自定义领域，如：围棋 / 咖啡" />
+          <button class="btn sm" id="btn-custom-domain">打开</button>
+        </div>
+      </div>
+      <div class="side-section side-grow">
+        <div class="side-title">学习会话</div>
+        <div class="session-list" id="session-list">
+          <div class="muted small">还没有会话，选一个领域开始吧。</div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="content">
+      <div class="chat-head">
+        <div class="chat-title">
+          <span id="current-domain">未选择领域</span>
+          <span class="conn" id="conn-dot" title="连接状态"></span>
+        </div>
+        <div class="chat-actions">
+          <button class="btn" id="btn-next">下一个知识点</button>
+          <button class="btn" id="btn-clear">清空会话</button>
+          <button class="btn ghost" id="btn-settings">配置接口</button>
+        </div>
+      </div>
+
+      <div class="messages" id="messages">
+        <div class="welcome" id="welcome">
+          <div class="welcome-emoji">🧠</div>
+          <h3>开始你的碎片化知识学习</h3>
+          <p>选择一个左侧领域，或输入自定义领域，即可让 AI 帮你生成通俗易懂的知识点卡片、测验题，并进行追问。</p>
+          <p class="muted small">首次使用请先到「配置接口」填写 OpenAI 兼容的 API 地址与密钥。</p>
+        </div>
+      </div>
+
+      <div class="compose">
+        <div class="mode-row">
+          <span class="mode-label">模式</span>
+          <div class="mode-switch">
+            <button class="mode active" data-mode="ask">我问你答</button>
+            <button class="mode" data-mode="card">知识卡片</button>
+            <button class="mode" data-mode="quiz">来道题</button>
+          </div>
+        </div>
+        <div class="input-row">
+          <textarea id="input" rows="2" placeholder="输入你的问题，或指定知识点方向…（Ctrl/⌘+Enter 发送）"></textarea>
+          <button class="btn primary send" id="btn-send">发送</button>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="knowledge.js"></script>
+</body>
+</html>

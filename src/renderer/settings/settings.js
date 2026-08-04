@@ -376,6 +376,29 @@ async function refreshStats() {
   }
 }
 
+/* ============================ AI / 知识学习 ============================ */
+
+async function bindLlm() {
+  const setStatus = (t) => {
+    $('llm-status').textContent = t;
+  };
+  $('btn-test-llm').addEventListener('click', async () => {
+    setStatus('测试中…');
+    try {
+      const r = await api.knowledge.test();
+      setStatus(r.ok ? `✓ 成功 · ${r.model} · ${r.latencyMs}ms` : '✗ ' + (r.error || '失败'));
+    } catch (e) {
+      setStatus('✗ ' + (e.message || '失败'));
+    }
+  });
+  try {
+    const st = await api.knowledge.status();
+    setStatus(st.configured ? `已配置 · ${st.model}` : '未配置 / 未启用');
+  } catch (e) {
+    setStatus('未检测');
+  }
+}
+
 /* ============================ 推送控制 ============================ */
 
 async function bindPushControls() {
@@ -466,6 +489,7 @@ async function init() {
   await refreshStats();
   await bindDictControls();
   await bindPushControls();
+  await bindLlm();
 
   // 启动时根据配置里的 autoLaunch 同步 checkbox 状态
   const al = await api.app.getAutoLaunch();

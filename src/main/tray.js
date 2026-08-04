@@ -92,6 +92,10 @@ function buildTemplate() {
     { label: '切换词库', submenu: booksSubmenu },
     { type: 'separator' },
     {
+      label: '🧠 AI 知识学习（Shift+K）',
+      click: () => wins.openKnowledge(),
+    },
+    {
       label: '设置面板...',
       accelerator: 'Ctrl+,',
       click: () => wins.openSettings(),

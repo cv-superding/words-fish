@@ -14,6 +14,7 @@ const hotkeys = require('./hotkeys');
 const ipc = require('./ipc');
 const notifier = require('./notifier');
 const autolaunch = require('./autolaunch');
+const { knowledge } = require('./knowledge');
 
 // 单实例
 const gotLock = app.requestSingleInstanceLock();
@@ -77,6 +78,7 @@ app.on('window-all-closed', (e) => {
 app.on('before-quit', () => {
   config.saveNow();
   records.flush();
+  knowledge.saveNow();
 });
 
 process.on('uncaughtException', (err) => {

@@ -74,6 +74,22 @@ const DEFAULTS = {
     reviewEnabled: true,
     priorityMarked: true, // 生词优先复现
   },
+
+  // 知识学习（接入 OpenAI 兼容的 LLM）
+  llm: {
+    enabled: false, // 是否启用 AI 知识学习
+    baseUrl: 'https://api.openai.com/v1', // OpenAI 兼容接口地址（含 /v1 前缀也可，会自动归一化）
+    apiKey: '', // API 密钥（仅存本地 userData）
+    model: 'gpt-4o-mini', // 模型名称
+    temperature: 0.7, // 采样温度（0~2）
+    maxTokens: 900, // 单次回复最大 token
+    timeoutMs: 30000, // 请求超时（毫秒）
+    proxy: '', // 可选 HTTP 代理，如 http://127.0.0.1:7890（用于访问被墙的接口）
+    systemPrompt:
+      '你是一个善于把复杂知识讲得通俗易懂、适合碎片化学习的知识助教。始终用中文回答。' +
+      '讲解要言简意赅、贴近生活，多用类比和具体例子，避免空话与长篇大论。' +
+      '每次回答聚焦一个具体知识点，必要时使用 Markdown（## 标题、**加粗**、列表）来让结构清晰。',
+  },
 };
 
 function isObj(v) {

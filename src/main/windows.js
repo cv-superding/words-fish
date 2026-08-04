@@ -12,6 +12,7 @@ const P = (f) => path.join(__dirname, '..', 'preload', f);
 let popupWin = null;
 let bubbleWin = null;
 let settingsWin = null;
+let knowledgeWin = null;
 let bubbleTimer = null;
 
 /* ------------------------------ 工具 ------------------------------ */
@@ -254,16 +255,68 @@ function closeSettings() {
   if (settingsWin && !settingsWin.isDestroyed()) settingsWin.close();
 }
 
+/* ---------------------------- 知识学习窗口 ---------------------------- */
+
+function openKnowledge(domain) {
+  if (knowledgeWin && !knowledgeWin.isDestroyed()) {
+    if (knowledgeWin.isMinimized()) knowledgeWin.restore();
+    knowledgeWin.show();
+    knowledgeWin.focus();
+    if (domain) knowledgeWin.webContents.send('knowledge:openDomain', domain);
+    return knowledgeWin;
+  }
+
+  knowledgeWin = new BrowserWindow({
+    width: 940,
+    height: 700,
+    minWidth: 760,
+    minHeight: 540,
+    show: false,
+    frame: false,
+    backgroundColor: '#f6f7f9',
+    title: '摸鱼背单词 · AI 知识学习',
+    webPreferences: {
+      preload: P('knowledge.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false,
+    },
+  });
+
+  knowledgeWin.loadFile(R('knowledge', 'index.html'));
+  knowledgeWin.once('ready-to-show', () => {
+    knowledgeWin.show();
+    if (domain) knowledgeWin.webContents.send('knowledge:openDomain', domain);
+  });
+  knowledgeWin.on('closed', () => {
+    knowledgeWin = null;
+  });
+  return knowledgeWin;
+}
+
+function closeKnowledge() {
+  if (knowledgeWin && !knowledgeWin.isDestroyed()) knowledgeWin.close();
+}
+
+function toggleKnowledge() {
+  if (knowledgeWin && !knowledgeWin.isDestroyed() && knowledgeWin.isVisible()) {
+    knowledgeWin.hide();
+    return false;
+  }
+  openKnowledge();
+  return true;
+}
+
 /* ------------------------------ 广播 ------------------------------ */
 
 function send(target, channel, payload) {
-  const map = { popup: popupWin, bubble: bubbleWin, settings: settingsWin };
+  const map = { popup: popupWin, bubble: bubbleWin, settings: settingsWin, knowledge: knowledgeWin };
   const win = map[target];
   if (win && !win.isDestroyed()) win.webContents.send(channel, payload);
 }
 
 function broadcast(channel, payload) {
-  for (const win of [popupWin, bubbleWin, settingsWin]) {
+  for (const win of [popupWin, bubbleWin, settingsWin, knowledgeWin]) {
     if (win && !win.isDestroyed()) win.webContents.send(channel, payload);
   }
 }
@@ -272,10 +325,11 @@ function hideAll() {
   hidePopup();
   hideBubble();
   if (settingsWin && !settingsWin.isDestroyed()) settingsWin.hide();
+  if (knowledgeWin && !knowledgeWin.isDestroyed()) knowledgeWin.hide();
 }
 
 function getWin(name) {
-  return { popup: popupWin, bubble: bubbleWin, settings: settingsWin }[name] || null;
+  return { popup: popupWin, bubble: bubbleWin, settings: settingsWin, knowledge: knowledgeWin }[name] || null;
 }
 
 module.exports = {
@@ -293,6 +347,9 @@ module.exports = {
   resizeBubble,
   openSettings,
   closeSettings,
+  openKnowledge,
+  closeKnowledge,
+  toggleKnowledge,
   send,
   broadcast,
   hideAll,

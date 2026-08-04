@@ -28,6 +28,7 @@
         <a class="nav-item" data-go="appearance"><span class="ico">🎨</span>悬浮窗外观</a>
         <a class="nav-item" data-go="hotkey"><span class="ico">⌨</span>全局快捷键</a>
         <a class="nav-item" data-go="gesture"><span class="ico">🖱</span>手势映射</a>
+        <a class="nav-item" data-go="llm"><span class="ico">🧠</span>AI / 知识学习</a>
         <a class="nav-item" data-go="about"><span class="ico">📊</span>统计与关于</a>
       </nav>
       <div class="sidebar-foot">
@@ -251,6 +252,63 @@
         <p class="muted">把鼠标手势映射为具体动作。单击与双击会互相抢占，配置时建议二选一。</p>
         <div class="card">
           <div id="gesture-list" class="gesture-list"></div>
+        </div>
+      </section>
+
+      <!-- AI / 知识学习 -->
+      <section class="page" id="page-llm">
+        <h2>AI / 知识学习</h2>
+        <p class="muted">接入 OpenAI 兼容的大模型接口，让应用动态生成领域知识（股票、编程等）。配置项保存在本地 userData，不会上传。</p>
+        <div class="card">
+          <div class="card-hd">
+            <h3>接口配置</h3>
+            <div class="card-actions">
+              <button class="btn" id="btn-test-llm">测试连接</button>
+              <span class="status" id="llm-status">未检测</span>
+            </div>
+          </div>
+          <div class="form-grid">
+            <label class="field switch-field">
+              <span class="label">启用 AI 知识学习</span>
+              <label class="switch"><input type="checkbox" data-cfg="llm.enabled" /><span></span></label>
+            </label>
+            <label class="field">
+              <span class="label">API 地址（Base URL）</span>
+              <input type="text" placeholder="https://api.openai.com/v1" data-cfg="llm.baseUrl" />
+            </label>
+            <label class="field">
+              <span class="label">API 密钥</span>
+              <input type="password" placeholder="sk-..." data-cfg="llm.apiKey" />
+            </label>
+            <label class="field">
+              <span class="label">模型名称</span>
+              <input type="text" placeholder="gpt-4o-mini" data-cfg="llm.model" />
+            </label>
+            <label class="field">
+              <span class="label">温度（0~2，越大越发散）</span>
+              <input type="number" min="0" max="2" step="0.05" data-cfg="llm.temperature" />
+            </label>
+            <label class="field">
+              <span class="label">最大回复 Token</span>
+              <input type="number" min="100" max="8000" step="100" data-cfg="llm.maxTokens" />
+            </label>
+            <label class="field">
+              <span class="label">请求超时（毫秒）</span>
+              <input type="number" min="3000" max="120000" step="1000" data-cfg="llm.timeoutMs" />
+            </label>
+            <label class="field">
+              <span class="label">HTTP 代理（可选，如 http://127.0.0.1:7890）</span>
+              <input type="text" placeholder="留空 = 直连" data-cfg="llm.proxy" />
+            </label>
+          </div>
+          <div class="field" style="margin-top:14px">
+            <span class="label">系统提示词（知识讲解风格）</span>
+            <textarea rows="4" data-cfg="llm.systemPrompt" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface-2);font-family:inherit;font-size:13px;resize:vertical"></textarea>
+          </div>
+          <p class="muted small" style="margin-top:10px">
+            兼容任意 OpenAI 格式接口（如 OpenAI、Azure OpenAI、DeepSeek、通义千问、本地 Ollama 等）。
+            若接口被网络限制，填写「HTTP 代理」即可走代理访问。
+          </p>
         </div>
       </section>
 

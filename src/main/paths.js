@@ -39,6 +39,9 @@ const paths = {
   get statsFile() {
     return path.join(getUserDir(), 'stats.json');
   },
+  get knowledgeFile() {
+    return path.join(getUserDir(), 'knowledge.json');
+  },
   get customDictDir() {
     return ensureDir(path.join(getUserDir(), 'dicts'));
   },

@@ -200,6 +200,29 @@ setImmediate(async () => {
     ok(fs2.existsSync(path.join(TMP, 'config.json')), 'config.json 已写入磁盘');
     ok(fs2.existsSync(path.join(TMP, 'records.json')), 'records.json 已写入磁盘');
 
+    logLine('\n=== H) 知识学习模块（LLM）IPC ===');
+    const llmCfg = await call('config:get');
+    ok(llmCfg && llmCfg.llm && typeof llmCfg.llm.enabled === 'boolean', 'config 含 llm 段（enabled 字段）');
+    ok(Array.isArray(constants.HOTKEY_ITEMS) && constants.HOTKEY_ITEMS.some((h) => h.key === 'openKnowledge'), 'config:constants 含 openKnowledge 快捷键');
+    const presets = await call('knowledge:presets');
+    ok(Array.isArray(presets) && presets.length >= 7, `knowledge:presets 返回 ${presets.length} 个领域`);
+    const kstatus = await call('knowledge:status');
+    ok(kstatus && kstatus.configured === false, 'knowledge:status 未配置时为 false');
+    const kopen = await call('knowledge:open', 'stock');
+    ok(kopen && kopen.session && kopen.session.domain === 'stock', 'knowledge:open 创建 stock 会话');
+    ok(Array.isArray(kopen.history) && kopen.history.length === 0, '新会话历史为空');
+    const klist = await call('knowledge:listSessions');
+    ok(Array.isArray(klist) && klist.length >= 1, 'knowledge:listSessions 至少 1 条');
+    let askErr = null;
+    try {
+      await call('knowledge:ask', kopen.session.id, 'card', '');
+    } catch (e) {
+      askErr = e;
+    }
+    ok(askErr && /未配置|LLM/.test(askErr.message), '未配置时 knowledge:ask 抛出清晰错误（不崩溃）');
+    const kreset = await call('knowledge:reset', kopen.session.id);
+    ok(kreset === true, 'knowledge:reset 返回 true');
+
     logLine(`\n=== 总结 ===\n通过 ${pass} / 失败 ${fail}`);
     finish(fail > 0 ? 1 : 0);
   } catch (e) {

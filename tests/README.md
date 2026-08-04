@@ -10,7 +10,8 @@ npm test
 
 # 单独
 npm run test:logic          # 50 项逻辑测试
-npm run test:integration    # 24 项无头集成测试
+npm run test:integration    # 33 项无头集成测试
+npm run test:llm            # 23 项 LLM / 知识学习集成测试
 ```
 
 > **GUI 测试说明**：沙箱环境无法启动真实 Electron 窗口，  
@@ -52,8 +53,23 @@ npm run test:integration    # 24 项无头集成测试
 - `win:togglePopup` / `win:openSettings`
 - `app:version`
 - 持久化落盘（确认 `config.json` / `records.json` 能正确写入 `userData`）
+- **知识学习模块（LLM）**：`config.llm` 段、`config:constants` 含 `openKnowledge` 快捷键、`knowledge:presets/open/ask/reset/status/listSessions`，未配置时 `ask` 优雅报错
 
 **关键价值**：能抓住模块加载、引用错、IPC handler 异常、配置无法落盘等**真集成 bug**。
+
+### `llm-test.js`（23 项 · 纯 Node + mock 服务器）
+
+起一个本地 mock OpenAI 服务器（兼容 `/v1/chat/completions`），覆盖 `src/main/llm.js` 与 `src/main/knowledge.js`：
+
+- 非流式 `chat/completions` 返回
+- 流式 SSE 分片拼接为完整文本、流式尾部 `usage` 解析
+- 401 错误码透传服务端消息
+- 知识会话：卡片生成、user/assistant 历史累积、追问模式
+- 自定义领域（`custom:xxx`）名称注入到提示词
+- `testConnection()` 成功 / 未启用
+- 未配置（缺 baseUrl/apiKey）时抛清晰错误
+
+不联网、不依赖 Electron，CI 默认跑这套。
 
 ### `render-test.js`（待修复）
 
@@ -73,7 +89,8 @@ npm run test:integration    # 24 项无头集成测试
 
 1. 简单断言：直接加到 `logic-test.js` 对应 section
 2. 集成场景：加到 `verify-headless.js`
-3. 视觉回归：等 `render-test.js` 修好后加
+3. LLM / 知识学习：加到 `llm-test.js`（配合 mock 服务器）
+4. 视觉回归：等 `render-test.js` 修好后加
 
 所有测试**不引入新依赖**（除 `jsdom`，已装）。
 

@@ -26,6 +26,7 @@ const handlers = {
   },
   toggleMeaning: () => wins.send('popup', 'gesture:fire', { gesture: 'toggleMeaning' }),
   openSettings: () => wins.openSettings(),
+  openKnowledge: () => wins.openKnowledge(),
   panic: () => {
     scheduler.suppress(60 * 60 * 1000);
     wins.hideAll();

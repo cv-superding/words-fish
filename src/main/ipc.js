@@ -15,6 +15,7 @@ const hotkeys = require('./hotkeys');
 const tray = require('./tray');
 const autolaunch = require('./autolaunch');
 const constants = require('./constants');
+const { knowledge } = require('./knowledge');
 
 function getRouted(reqWin) {
   return {
@@ -92,6 +93,32 @@ function register() {
   ipcMain.handle('study:stats', () => wordflow.statsSnapshot());
   ipcMain.handle('study:marked', () => wordflow.getBook() && records.markedList(wordflow.getBook()));
 
+  /* --------------------------- 知识学习（LLM） --------------------------- */
+  ipcMain.handle('knowledge:presets', () => knowledge.listPresets());
+  ipcMain.handle('knowledge:listSessions', () => knowledge.listSessions());
+  ipcMain.handle('knowledge:open', (_, domain) => {
+    const s = knowledge.getOrCreate(domain);
+    return { session: { id: s.id, domain: s.domain }, history: knowledge.history(s.id), status: knowledge.status() };
+  });
+  ipcMain.handle('knowledge:ask', async (e, sessionId, type, input) => {
+    return await knowledge.ask(sessionId, type, input, {
+      onToken: (token) => {
+        try {
+          e.sender.send('knowledge:token', { sessionId, token });
+        } catch (err) {}
+      },
+      onDone: () => {
+        try {
+          e.sender.send('knowledge:done', { sessionId });
+        } catch (err) {}
+      },
+    });
+  });
+  ipcMain.handle('knowledge:history', (_, sessionId) => knowledge.history(sessionId));
+  ipcMain.handle('knowledge:reset', (_, sessionId) => knowledge.reset(sessionId));
+  ipcMain.handle('knowledge:status', () => knowledge.status());
+  ipcMain.handle('knowledge:test', () => knowledge.testConnection());
+
   /* --------------------------- 通知 / 推送 --------------------------- */
   ipcMain.handle('notify:push', (_, trigger = 'manual') => notifier.push(trigger));
   ipcMain.handle('notify:pause', (_, ms = 0) => {
@@ -123,6 +150,7 @@ function register() {
   ipcMain.handle('win:hideBubble', () => wins.hideBubble());
   ipcMain.handle('win:hideAll', () => wins.hideAll());
   ipcMain.handle('win:openSettings', (_, section) => wins.openSettings(section));
+  ipcMain.handle('win:openKnowledge', (_, domain) => wins.openKnowledge(domain));
   ipcMain.handle('win:close', (e) => {
     const w = e.sender.getOwnerBrowserWindow();
     if (w) w.close();
@@ -229,6 +257,9 @@ function dispatchAction(action, ctx) {
     }
     case 'openSettings':
       wins.openSettings();
+      break;
+    case 'openKnowledge':
+      wins.openKnowledge();
       break;
   }
 }
