@@ -12,6 +12,7 @@ packout2/
 packout3/
 packout4/
 packout5/
+packout6/
 _recovery/
 _asar_extract/
 _asar_extract2/
@@ -23,6 +24,8 @@ _mirror2/
 _vrf/
 _swap.js
 _verify_fix.js
+_verify_popup.js
+_debug_asar.js
 builder-out.json
 *.exe
 *.dmg

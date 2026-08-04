@@ -204,7 +204,9 @@ function setupKnowledgeWebview() {
   api.onAssets(({ knowledgeHtml, knowledgePreload }) => {
     if (!knowledgeHtml) return;
     try { wv.preload = knowledgePreload; } catch (e) {}
-    wv.src = knowledgeHtml;
+    // 标记宿主为 popup：知识页面会据此精简布局（隐藏侧栏 / 砍多余按钮）。
+    const sep = knowledgeHtml.includes('?') ? '&' : '?';
+    wv.src = `${knowledgeHtml}${sep}host=popup`;
   });
 }
 

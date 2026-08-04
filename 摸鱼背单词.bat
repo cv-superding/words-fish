@@ -1,11 +1,11 @@
 @echo off
 REM 摸鱼背单词 - 启动器
-REM 自动选择最新构建：优先 packout5（含知识视图尺寸上限 520x440，默认不会被旧 session 拖大），
-REM 其次 packout4 / packout3 / packout2 / packout / release / dist
-REM 启动前自动从 packout5 补齐所选构建目录可能缺失的关键运行时 DLL（ffmpeg.dll 等），
+REM 自动选择最新构建：优先 packout6（含悬浮窗知识视图精简布局 + 尺寸上限），
+REM 其次 packout5 / packout4 / packout3 / packout2 / packout / release / dist
+REM 启动前自动从 packout6 补齐所选构建目录可能缺失的关键运行时 DLL（ffmpeg.dll 等），
 REM 彻底避免 Windows 加载器弹"找不到 xxx.dll"而 electron 还没起来就直接挂掉。
 set "BASE=%~dp0"
-set "GOLD=%BASE%packout5\win-unpacked"
+set "GOLD=%BASE%packout6\win-unpacked"
 
 REM 关键：清除可能由外部终端/IDE（如 WorkBuddy 会话）注入的 NODE_OPTIONS
 REM （含 --use-system-ca 等）。Electron 启动时会继承该变量，不认这些参数会直接报错秒退。
@@ -13,11 +13,11 @@ set NODE_OPTIONS=
 REM 关闭可能残留的旧实例（单实例锁，旧进程会阻止新版本启动）
 taskkill /f /im WordsFish.exe >nul 2>&1
 
-REM 兜底：如果黄金构建 packout5 存在，先确保它自己 DLL 齐全（防御性）
+REM 兜底：如果黄金构建 packout6 存在，先确保它自己 DLL 齐全（防御性）
 call :ensure_dlls "%GOLD%"
 
 REM 按优先级选构建并启动
-for %%P in (packout5 packout4 packout3 packout2 packout release dist) do (
+for %%P in (packout6 packout5 packout4 packout3 packout2 packout release dist) do (
   if exist "%BASE%%%P\win-unpacked\WordsFish.exe" (
     call :ensure_dlls "%BASE%%%P\win-unpacked"
     echo [启动器] 正在启动: %%P

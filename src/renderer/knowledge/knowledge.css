@@ -210,3 +210,79 @@ html, body {
 .messages::-webkit-scrollbar-thumb:hover, .session-list::-webkit-scrollbar-thumb:hover {
   background: rgba(0,0,0,0.32);
 }
+
+/* ================== popup（悬浮窗 webview 嵌入）精简布局 ==================
+ * 这是个悬浮窗，不是全窗口。popup.js 在 URL 加 ?host=popup，
+ * knowledge.js 据此删掉侧栏/多余按钮/模式切换，这里负责把剩余区域塞得紧凑。
+ * standalone 模式不受影响。
+ */
+[data-host="popup"] {
+  --radius: 8px;
+}
+[data-host="popup"] html,
+[data-host="popup"] body {
+  font-size: 13px;
+  background: var(--bg);
+}
+[data-host="popup"] .app {
+  display: grid;
+  grid-template-rows: 1fr;
+  grid-template-columns: 1fr;
+  grid-template-areas: "content";
+  height: 100vh;
+}
+[data-host="popup"] .sidebar,
+[data-host="popup"] .titlebar,
+[data-host="popup"] .mode-row { display: none !important; }
+[data-host="popup"] .chat-head {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+[data-host="popup"] .chat-title { font-size: 13.5px; gap: 6px; }
+[data-host="popup"] .chat-actions { gap: 6px; }
+[data-host="popup"] .chat-actions .btn {
+  padding: 5px 10px; font-size: 12px; border-radius: 6px;
+}
+[data-host="popup"] .messages {
+  padding: 10px 12px;
+  gap: 10px;
+}
+[data-host="popup"] .welcome {
+  margin: auto;
+  padding: 18px;
+  border-radius: 10px;
+}
+[data-host="popup"] .welcome-emoji { font-size: 28px; }
+[data-host="popup"] .welcome h3 { font-size: 14.5px; margin-bottom: 6px; }
+[data-host="popup"] .welcome p { line-height: 1.55; font-size: 12.5px; }
+[data-host="popup"] .bubble {
+  padding: 9px 11px; font-size: 12.5px; border-radius: 10px;
+}
+[data-host="popup"] .msg .avatar { width: 24px; height: 24px; font-size: 13px; }
+[data-host="popup"] .compose {
+  padding: 8px 10px 10px;
+}
+[data-host="popup"] .input-row textarea {
+  padding: 8px 10px; font-size: 12.5px;
+}
+[data-host="popup"] .send { height: 32px; padding: 0 14px; font-size: 12.5px; }
+[data-host="popup"] .domain-chips-inline {
+  display: flex; flex-wrap: nowrap; overflow-x: auto;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+[data-host="popup"] .domain-chips-inline::-webkit-scrollbar { height: 4px; }
+[data-host="popup"] .domain-chips-inline::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.18); border-radius: 2px;
+}
+[data-host="popup"] .domain-chips-inline .chip {
+  padding: 4px 10px;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+[data-host="popup"] .current-domain-empty {
+  color: var(--text-mute);
+}

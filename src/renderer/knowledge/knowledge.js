@@ -4,6 +4,7 @@ const api = window.wfKnowledge;
 const $ = (id) => document.getElementById(id);
 const flash = (text) => {
   const el = $('status-line');
+  if (!el) return; // popup 模式无标题栏，没 status-line，silent 即可
   el.textContent = text;
   clearTimeout(flash._t);
   flash._t = setTimeout(() => (el.textContent = '就绪'), 1800);
@@ -24,8 +25,49 @@ const state = {
 
 /* ============================ 初始化 ============================ */
 
+// 识别宿主：webview 加载时 popup.js 会追加 ?host=popup；
+// BrowserWindow 直接加载是 standalone。
+function detectHost() {
+  const params = new URLSearchParams(location.search);
+  const host = params.get('host') === 'popup' ? 'popup' : 'standalone';
+  document.body.dataset.host = host;
+  return host;
+}
+
+function applyPopupLayout() {
+  // popup 模式：去掉侧栏（领域 chip / 会话列表），砍掉多余按钮与模式切换
+  const sidebar = document.querySelector('.sidebar');
+  if (sidebar) sidebar.remove();
+
+  // 顶部 chat-actions：只留"下一个知识点"
+  const clear = document.getElementById('btn-clear');
+  if (clear) clear.remove();
+  const settings = document.getElementById('btn-settings');
+  if (settings) settings.remove();
+
+  // 模式切换：在悬浮窗里默认走"知识卡片"，省掉一行 UI
+  const modeRow = document.querySelector('.mode-row');
+  if (modeRow) modeRow.remove();
+  state.mode = 'card';
+
+  // 标题栏：webview 里既无最小化/关闭按钮（hideGuestTitlebar 兜底），也没意义
+  const titlebar = document.querySelector('.titlebar');
+  if (titlebar) titlebar.remove();
+
+  // 在消息流上方插一行紧凑的"领域切换"chip（侧栏删了，领域切换必须有入口）
+  const chatHead = document.querySelector('.chat-head');
+  const inline = document.createElement('div');
+  inline.className = 'domain-chips-inline';
+  inline.id = 'domain-chips-inline';
+  chatHead.parentNode.insertBefore(inline, chatHead.nextSibling);
+}
+
 async function init() {
+  const host = detectHost();
   bindUI();
+  // popup 模式：必须在 renderChips 之前改 DOM，否则侧栏/模式 row 还在
+  if (host === 'popup') applyPopupLayout();
+
   api.onToken(onToken);
   api.onDone(onDone);
   api.onConfigChanged(async ({ section }) => {
@@ -39,7 +81,7 @@ async function init() {
     state.sessions = sessions;
     state.model = status.model || '';
     renderChips();
-    renderSessions();
+    if (host !== 'popup') renderSessions();
     await updateConnDot();
   } catch (e) {
     console.error(e);
@@ -49,7 +91,8 @@ async function init() {
 /* ============================ 侧栏渲染 ============================ */
 
 function renderChips() {
-  const host = $('domain-chips');
+  const host = $('domain-chips-inline') || $('domain-chips');
+  if (!host) return;
   host.innerHTML = '';
   for (const p of state.presets) {
     const el = document.createElement('div');
@@ -217,11 +260,20 @@ function finalizeAssistant() {
 async function send() {
   if (state.streaming) return;
   if (!state.current) {
-    flash('请先在左侧选择一个领域');
+    flash(document.body.dataset.host === 'popup' ? '请先选择一个领域' : '请先在左侧选择一个领域');
     return;
   }
-  const type = state.mode;
+  // popup 模式没有模式切换 UI：用 mode 与 input 协同
+  //   input 为空 → 走 'card'（生成知识卡片）
+  //   input 非空 → 走 'ask'（把问题抛给 AI）
+  // 这样点"下一个知识点"和"输入后发送"两个动作都顺，且无须额外控件。
   const input = $('input').value;
+  let type;
+  if (document.body.dataset.host === 'popup') {
+    type = input.trim() ? 'ask' : 'card';
+  } else {
+    type = state.mode;
+  }
   if (type === 'ask' && !input.trim()) {
     flash('请输入你的问题');
     return;
@@ -281,15 +333,16 @@ async function updateConnDot() {
 /* ============================ 交互绑定 ============================ */
 
 function bindUI() {
-  $('btn-minimize').addEventListener('click', () => api.win.minimize());
-  $('btn-close').addEventListener('click', () => api.win.close());
-  $('btn-send').addEventListener('click', send);
-  $('btn-next').addEventListener('click', () => {
+  const on = (id, fn) => { const el = $(id); if (el) el.addEventListener('click', fn); };
+  on('btn-minimize', () => api.win.minimize());
+  on('btn-close', () => api.win.close());
+  on('btn-send', send);
+  on('btn-next', () => {
     state.mode = 'card';
     syncModeUI();
     send();
   });
-  $('btn-clear').addEventListener('click', async () => {
+  on('btn-clear', async () => {
     if (!state.current) return;
     if (!confirm('清空当前会话的学习记录？')) return;
     await api.reset(state.current.id);
@@ -297,8 +350,8 @@ function bindUI() {
     flash('会话已清空');
     renderSessions();
   });
-  $('btn-settings').addEventListener('click', () => api.win.openSettings('llm'));
-  $('btn-custom-domain').addEventListener('click', () => {
+  on('btn-settings', () => api.win.openSettings('llm'));
+  on('btn-custom-domain', () => {
     const v = $('custom-domain-input').value.trim();
     if (!v) {
       flash('请输入自定义领域');
@@ -306,7 +359,8 @@ function bindUI() {
     }
     openDomain('custom:' + v);
   });
-  $('custom-domain-input').addEventListener('keydown', (e) => {
+  const cdi = $('custom-domain-input');
+  if (cdi) cdi.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') $('btn-custom-domain').click();
   });
 
@@ -339,9 +393,10 @@ function syncModeUI() {
 }
 
 function setComposeDisabled(disabled) {
-  $('btn-send').disabled = disabled;
-  $('btn-next').disabled = disabled;
-  $('input').disabled = disabled;
+  const setDis = (id) => { const el = $(id); if (el) el.disabled = disabled; };
+  setDis('btn-send');
+  setDis('btn-next');
+  setDis('input');
 }
 
 function copyText(text) {
