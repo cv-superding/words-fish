@@ -714,6 +714,13 @@ npm run test:llm
 
 ## 📝 更新日志
 
+### v1.2.2（2026-08-04）
+- 🐛 修复**知识视图尺寸失控**：之前默认 700x540 + 无上限，旧 session 拖过的 `popup.knowledgeSize` 会原样还原成巨型窗口
+- ✨ 知识视图默认缩小到 **520x440**，最大 620x540（最大仍比单词视图大一档）
+- 🛡 单词视图最大 560x420；主进程 `resizePopup` 硬上限 720x600，任何调用都过不了这关
+- 🛡 右下角 grip 拖拽按当前视图钳位，无法再把悬浮窗拖到撑满屏幕
+- 🧹 旧 `popup.knowledgeSize` 即使被拖到 1000+ 也会在下次切视图时自动钳到上限，无需手动清配置
+
 ### v1.2.1（2026-08-04）
 - 🐛 修复**滚轮误切换单词**：悬浮窗新增 `wheel` 事件 `stopPropagation` 兜底，杜绝父级 / Electron 级监听误触发切词（内容区自身滚动不受影响）
 - 🐛 修复**软件打不开**：旧构建产物缺 `ffmpeg.dll` 等运行库导致 Windows 报「找不到 ffmpeg.dll」；启动器 `摸鱼背单词.bat` 新增 `ensure_dlls` 自检逻辑，自动从完整构建补齐缺失 DLL（ffmpeg.dll / icudtl.dat / d3dcompiler_47.dll / libEGL.dll / libGLESv2.dll）

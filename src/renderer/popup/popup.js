@@ -145,7 +145,16 @@ function scheduleResize() {
 
 /* ----------------------- 单词 / 知识 视图切换 ----------------------- */
 
-const KNOWLEDGE_DEFAULT = { width: 700, height: 540 };
+// 知识视图尺寸：默认比单词视图大一档够用，但绝不能撑满屏幕（这就是个悬浮窗）。
+const KNOWLEDGE_DEFAULT = { width: 520, height: 440 };
+// 视图最大尺寸：旧 session 拖过的 size 会被存到 config，下次切视图会用回来；上限防失控。
+const KNOWLEDGE_MAX = { width: 620, height: 540 };
+const WORD_MAX = { width: 560, height: 420 };
+function clampSize(s, max, fallback) {
+  const w = Math.max(280, Math.min(max.width, s && Number.isFinite(s.width) ? s.width : fallback.width));
+  const h = Math.max(180, Math.min(max.height, s && Number.isFinite(s.height) ? s.height : fallback.height));
+  return { width: w, height: h };
+}
 
 async function applyView(view) {
   if (view !== 'word' && view !== 'knowledge') view = 'word';
@@ -164,13 +173,11 @@ async function applyView(view) {
   try {
     const cfg = await api.getPopup();
     if (view === 'knowledge') {
-      size = (cfg && cfg.knowledgeSize && cfg.knowledgeSize.width >= 280)
-        ? cfg.knowledgeSize
-        : KNOWLEDGE_DEFAULT;
+      // 即使 cfg.knowledgeSize 已被旧 session 拖到 1000+，也强制钳到 KNOWLEDGE_MAX
+      size = clampSize(cfg && cfg.knowledgeSize, KNOWLEDGE_MAX, KNOWLEDGE_DEFAULT);
     } else {
-      const w = (cfg && cfg.size && cfg.size.width >= 280) ? cfg.size.width : (cfg && cfg.width) || 380;
-      const h = (cfg && cfg.size && cfg.size.height >= 180) ? cfg.size.height : 240;
-      size = { width: w, height: h };
+      const raw = (cfg && cfg.size) || {};
+      size = clampSize({ width: raw.width || 380, height: raw.height || 240 }, WORD_MAX, { width: 380, height: 240 });
     }
   } catch (e) {}
 
@@ -308,8 +315,9 @@ if (refs.resizeGrip) {
   });
   window.addEventListener('mousemove', (e) => {
     if (!dragging) return;
-    const nw = Math.max(280, Math.round(startW + (e.clientX - startX)));
-    const nh = Math.max(180, Math.round(startH + (e.clientY - startY)));
+    const max = state.view === 'knowledge' ? KNOWLEDGE_MAX : WORD_MAX;
+    const nw = Math.max(280, Math.min(max.width, Math.round(startW + (e.clientX - startX))));
+    const nh = Math.max(180, Math.min(max.height, Math.round(startH + (e.clientY - startY))));
     api.resize(nw, nh, true);
   });
   window.addEventListener('mouseup', () => {

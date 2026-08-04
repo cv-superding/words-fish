@@ -152,6 +152,12 @@ function resizePopup(width, height, force = false) {
   let w = Math.round(width);
   let h = Math.round(height);
 
+  // 硬上限：无论谁调 resize，悬浮窗都不能撑满屏幕。
+  // 知识视图稍大、单词视图稍小；超过即钳位，防止 config 里被旧 session 拖到离谱的值或后续 bug 导致窗口失控。
+  const HARD_MAX = { width: 720, height: 600 };
+  if (w > HARD_MAX.width) w = HARD_MAX.width;
+  if (h > HARD_MAX.height) h = HARD_MAX.height;
+
   // 用户手动缩放后，不再被 scheduleResize 缩回去
   // force=true 用于 grip 拖拽过程中，允许自由缩小
   if (!force && popupUserResized) {
