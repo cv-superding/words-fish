@@ -18,6 +18,9 @@ contextBridge.exposeInMainWorld('wfPopup', {
   resize: (w, h, force) => invoke('win:resizePopup', w, h, force),
   fireGesture: (gesture) => invoke('gesture:fire', gesture),
   savePosition: (x, y) => invoke('win:savePosition', x, y),
+  getPopup: () => invoke('config:getSection', 'popup'),
+  setView: (view) => invoke('win:setView', view),
+  requestAssets: () => invoke('win:requestAssets'),
   close: () => invoke('win:hidePopup'),
   alwaysOnTop: (flag) => invoke('win:alwaysOnTop', flag),
   speak: (text, lang = 'en-US') => {
@@ -34,4 +37,5 @@ contextBridge.exposeInMainWorld('wfPopup', {
   onGesture: (fn) => on('gesture:fire', fn),
   onConfig: (fn) => on('config:changed', fn),
   onStats: (fn) => on('stats:update', fn),
+  onAssets: (fn) => on('popup:assets', fn),
 });

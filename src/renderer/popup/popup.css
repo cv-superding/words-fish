@@ -136,9 +136,55 @@ html, body {
 .dragbar .pin.active { color: var(--accent); background: var(--accent-soft); }
 
 #content {
+  position: relative;
   flex: 1;
   overflow-y: auto;
   padding: 14px 18px 8px;
+}
+
+/* 视图切换：单词 / 知识 */
+.tabs {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 4px;
+  padding: 6px 10px 0;
+  background: var(--bg-strong);
+  border-bottom: 1px solid var(--border);
+}
+.tabs .tab {
+  -webkit-app-region: no-drag;
+  flex: 1;
+  border: 0;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 8px;
+  border-radius: 8px 8px 0 0;
+  color: var(--text-mute);
+  background: transparent;
+  transition: background 0.1s ease, color 0.1s ease;
+}
+.tabs .tab:hover { color: var(--accent); }
+.tabs .tab.active { color: var(--accent); background: var(--accent-soft); }
+
+.view { display: block; }
+.view.hidden { display: none !important; }
+
+#knowledge-view {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #f6f7f9;
+  display: flex;
+}
+#knowledge-webview {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
 }
 
 .meaning-panel {

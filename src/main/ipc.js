@@ -3,6 +3,8 @@
  * IPC 处理：所有从渲染层发起的调用都通过这里，统一登记。
  */
 const { ipcMain, shell, app } = require('electron');
+const path = require('path');
+const { pathToFileURL } = require('url');
 const dialog = require('./ipc-dialog');
 const { config, DEFAULTS } = require('./config');
 const dict = require('./dict');
@@ -16,6 +18,9 @@ const tray = require('./tray');
 const autolaunch = require('./autolaunch');
 const constants = require('./constants');
 const { knowledge } = require('./knowledge');
+
+const R = (...p) => path.join(__dirname, '..', 'renderer', ...p);
+const P = (f) => path.join(__dirname, '..', 'preload', f);
 
 function getRouted(reqWin) {
   return {
@@ -145,6 +150,21 @@ function register() {
   });
   ipcMain.handle('win:togglePopup', () => wins.togglePopup());
   ipcMain.handle('win:resizePopup', (_, w, h, force) => wins.resizePopup(w, h, force));
+  ipcMain.handle('win:setView', (_, view) => {
+    if (view !== 'word' && view !== 'knowledge') return false;
+    config.update({ popup: { view } }, { silentReload: true });
+    return true;
+  });
+  ipcMain.handle('win:requestAssets', () => {
+    const w = wins.getWin('popup');
+    if (w && !w.isDestroyed()) {
+      w.webContents.send('popup:assets', {
+        knowledgeHtml: pathToFileURL(R('knowledge', 'index.html')).href,
+        knowledgePreload: pathToFileURL(P('knowledge.js')).href,
+      });
+    }
+    return true;
+  });
   ipcMain.handle('win:resizeBubble', (_, w, h) => wins.resizeBubble(w, h));
   ipcMain.handle('win:holdBubble', () => wins.holdBubble());
   ipcMain.handle('win:hideBubble', () => wins.hideBubble());

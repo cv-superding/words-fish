@@ -8,6 +8,12 @@ const refs = {
   content: $('content'),
   progress: $('progress'),
   meaningPanel: $('meaning-panel'),
+  tabWord: $('tab-word'),
+  tabKnowledge: $('tab-knowledge'),
+  wordView: $('word-view'),
+  knowledgeView: $('knowledge-view'),
+  knowledgeWebview: $('knowledge-webview'),
+  actions: $('actions'),
   btnPin: $('btn-pin'),
   btnClose: $('btn-close'),
   btnUnknown: $('btn-unknown'),
@@ -21,6 +27,7 @@ let state = {
   payload: null,
   revealed: true,
   pinned: false,
+  view: 'word',
   gestures: {},
   clickPending: null,
   longPressTimer: null,
@@ -124,7 +131,8 @@ function render(payload) {
   const speakBtn = document.getElementById('speak-btn');
   if (speakBtn) speakBtn.addEventListener('click', (e) => { e.stopPropagation(); api.speak(w.w); });
 
-  scheduleResize();
+  // 仅在单词视图下随内容自适应高度；知识视图尺寸由用户/视图切换控制
+  if (state.view !== 'knowledge') scheduleResize();
 }
 
 function scheduleResize() {
@@ -132,6 +140,64 @@ function scheduleResize() {
     const h = document.getElementById('root').getBoundingClientRect().height;
     const w = document.getElementById('root').getBoundingClientRect().width;
     api.resize(Math.ceil(w), Math.ceil(h));
+  });
+}
+
+/* ----------------------- 单词 / 知识 视图切换 ----------------------- */
+
+const KNOWLEDGE_DEFAULT = { width: 700, height: 540 };
+
+async function applyView(view) {
+  if (view !== 'word' && view !== 'knowledge') view = 'word';
+  state.view = view;
+
+  refs.tabWord.classList.toggle('active', view === 'word');
+  refs.tabKnowledge.classList.toggle('active', view === 'knowledge');
+  refs.wordView.classList.toggle('hidden', view !== 'word');
+  refs.knowledgeView.classList.toggle('hidden', view !== 'knowledge');
+  // 单词视图才显示底部操作栏（生词/下一个等）；知识视图使用内嵌知识面板的输入区
+  refs.actions.classList.toggle('hidden', view !== 'word');
+
+  try { await api.setView(view); } catch (e) {}
+
+  let size = KNOWLEDGE_DEFAULT;
+  try {
+    const cfg = await api.getPopup();
+    if (view === 'knowledge') {
+      size = (cfg && cfg.knowledgeSize && cfg.knowledgeSize.width >= 280)
+        ? cfg.knowledgeSize
+        : KNOWLEDGE_DEFAULT;
+    } else {
+      const w = (cfg && cfg.size && cfg.size.width >= 280) ? cfg.size.width : (cfg && cfg.width) || 380;
+      const h = (cfg && cfg.size && cfg.size.height >= 180) ? cfg.size.height : 240;
+      size = { width: w, height: h };
+    }
+  } catch (e) {}
+
+  // force=true：切换视图时允许在两种尺寸间自由变化（不受手动缩放钳制）
+  api.resize(size.width, size.height, true);
+  if (view === 'word') scheduleResize();
+}
+
+function setupTabs() {
+  refs.tabWord.addEventListener('click', (e) => { e.stopPropagation(); applyView('word'); });
+  refs.tabKnowledge.addEventListener('click', (e) => { e.stopPropagation(); applyView('knowledge'); });
+}
+
+function setupKnowledgeWebview() {
+  const wv = refs.knowledgeWebview;
+  if (!wv) return;
+  // 隐藏知识面板自带的标题栏（最小化/关闭按钮会作用到错误的宿主窗口）
+  const hideGuestTitlebar = () => {
+    try { wv.insertCSS('.titlebar { display: none !important; }'); } catch (e) {}
+  };
+  wv.addEventListener('dom-ready', hideGuestTitlebar);
+  wv.addEventListener('did-stop-loading', hideGuestTitlebar);
+
+  api.onAssets(({ knowledgeHtml, knowledgePreload }) => {
+    if (!knowledgeHtml) return;
+    try { wv.preload = knowledgePreload; } catch (e) {}
+    wv.src = knowledgeHtml;
   });
 }
 
@@ -256,7 +322,10 @@ if (refs.resizeGrip) {
 
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') api.close();
-  else if (e.key === ' ') {
+  else if (e.key === 'Tab') {
+    e.preventDefault();
+    applyView(state.view === 'word' ? 'knowledge' : 'word');
+  } else if (e.key === ' ') {
     e.preventDefault();
     refs.btnNext.click();
   } else if (e.key === 'Enter') {
@@ -291,4 +360,15 @@ window.addEventListener('resize', scheduleResize);
 (async () => {
   const p = await api.current();
   render(p);
+  setupTabs();
+  setupKnowledgeWebview();
+  try { await api.requestAssets(); } catch (e) {}
+
+  // 恢复上次停留的视图（单词 / 知识）
+  let initialView = 'word';
+  try {
+    const cfg = await api.getPopup();
+    initialView = (cfg && cfg.view) || 'word';
+  } catch (e) {}
+  applyView(initialView);
 })();

@@ -8,6 +8,8 @@ dist/
 out/
 build/
 packout/
+packout2/
+_asar_extract/
 _check_r/
 _mirror2/
 _vrf/

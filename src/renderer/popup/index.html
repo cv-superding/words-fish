@@ -15,11 +15,21 @@
       <button class="close" id="btn-close" title="关闭">×</button>
     </div>
 
+    <div class="tabs">
+      <button class="tab active" id="tab-word" data-view="word">单词</button>
+      <button class="tab" id="tab-knowledge" data-view="knowledge">知识</button>
+    </div>
+
     <main id="content">
-      <div class="meaning-panel" id="meaning-panel"></div>
+      <div class="view" id="word-view">
+        <div class="meaning-panel" id="meaning-panel"></div>
+      </div>
+      <div class="view hidden" id="knowledge-view">
+        <webview id="knowledge-webview" nodeintegration="false"></webview>
+      </div>
     </main>
 
-    <footer class="actions">
+    <footer class="actions" id="actions">
       <button class="act unknown" id="btn-unknown" title="标记为生词">生词</button>
       <button class="act reveal" id="btn-reveal" title="显示/隐藏释义">显示释义</button>
       <button class="act known" id="btn-known" title="记住了">记住</button>

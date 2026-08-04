@@ -1,8 +1,13 @@
 @echo off
 REM 摸鱼背单词 - 启动器
-REM 自动选择最新构建：优先 packout（最新修复版），其次 release / dist
+REM 自动选择最新构建：优先 packout2（最新双模式版），其次 packout / release / dist
 set "BASE=%~dp0"
 
+if exist "%BASE%\packout2\win-unpacked\WordsFish.exe" (
+  cd /d "%BASE%\packout2\win-unpacked"
+  start "" "%BASE%\packout2\win-unpacked\WordsFish.exe"
+  goto :eof
+)
 if exist "%BASE%\packout\win-unpacked\WordsFish.exe" (
   cd /d "%BASE%\packout\win-unpacked"
   start "" "%BASE%\packout\win-unpacked\WordsFish.exe"

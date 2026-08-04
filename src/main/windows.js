@@ -4,6 +4,7 @@
  */
 const { BrowserWindow, screen } = require('electron');
 const path = require('path');
+const { pathToFileURL } = require('url');
 const { config } = require('./config');
 
 const R = (...p) => path.join(__dirname, '..', 'renderer', ...p);
@@ -67,6 +68,7 @@ function createPopup() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
+      webviewTag: true,
       backgroundThrottling: false,
     },
   });
@@ -82,11 +84,17 @@ function createPopup() {
   });
 
   // 用户手动缩放后保存尺寸，后续不再被 scheduleResize 缩回去
+  // 按当前视图分别保存（单词尺寸 / 知识尺寸），切换视图时各自还原
   popupWin.on('resized', () => {
     if (!popupWin || popupWin.isDestroyed()) return;
     popupUserResized = true;
     const [nw, nh] = popupWin.getSize();
-    config.update({ popup: { size: { width: nw, height: nh } } }, { silentReload: true });
+    const view = config.get('popup.view', 'word');
+    if (view === 'knowledge') {
+      config.update({ popup: { knowledgeSize: { width: nw, height: nh } } }, { silentReload: true });
+    } else {
+      config.update({ popup: { size: { width: nw, height: nh } } }, { silentReload: true });
+    }
   });
 
   popupWin.on('closed', () => {

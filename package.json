@@ -1,6 +1,6 @@
 {
   "name": "words-fish",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "摸鱼背单词 - Windows 桌面碎片化英语单词记忆工具（托盘通知 + 全局快捷键悬浮窗）",
   "main": "src/main/main.js",
   "author": "cv-superding",
