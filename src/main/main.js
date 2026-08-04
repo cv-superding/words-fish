@@ -48,19 +48,13 @@ app.whenReady().then(() => {
   // 调度
   scheduler.start();
 
-  // 设置窗口（可选，--minimized 时不弹）
-  if (!minimizedStart && !config.get('general.startMinimized', true)) {
+  // 首次启动引导：打开设置窗口让用户先配置词库/推送/AI，
+  // 避免“一打开就是个单词气泡、还关不掉”的困惑。之后再启动按 startMinimized 静默待在托盘。
+  const isFirstRun = !config.get('general.firstRunDone', false);
+  if (!minimizedStart && (isFirstRun || !config.get('general.startMinimized', true))) {
     wins.openSettings();
   }
-
-  // 首次启动主动推一次，建立“今天看了几个”的初始数据
-  setTimeout(() => {
-    try {
-      notifier.push('first-launch');
-    } catch (e) {
-      console.error('首次推送失败', e);
-    }
-  }, 1200);
+  try { config.update({ general: { firstRunDone: true } }, { silentReload: true }); } catch (e) { /* ignore */ }
 });
 
 app.on('second-instance', () => {

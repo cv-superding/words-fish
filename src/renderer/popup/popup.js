@@ -14,6 +14,7 @@ const refs = {
   btnKnown: $('btn-known'),
   btnReveal: $('btn-reveal'),
   btnNext: $('btn-next'),
+  resizeGrip: document.querySelector('.resize-grip'),
 };
 
 let state = {
@@ -163,11 +164,6 @@ function handleClick(e) {
   }, 280);
 }
 
-function handleWheel(e) {
-  e.preventDefault();
-  fireGesture(e.deltaY > 0 ? 'wheelDown' : 'wheelUp');
-}
-
 function handleContext(e) {
   e.preventDefault();
   fireGesture('rightclick');
@@ -224,11 +220,39 @@ refs.btnPin.addEventListener('click', (e) => {
 });
 
 refs.meaningPanel.addEventListener('click', handleClick);
-refs.meaningPanel.addEventListener('wheel', handleWheel, { passive: false });
 refs.meaningPanel.addEventListener('contextmenu', handleContext);
 refs.meaningPanel.addEventListener('mousedown', handleDown);
 refs.meaningPanel.addEventListener('mouseup', handleUp);
 refs.meaningPanel.addEventListener('mouseleave', () => clearTimeout(state.longPressTimer));
+
+// 右下角 grip 拖拽缩放（同时窗口四边也可由系统原生边框拖拽）
+if (refs.resizeGrip) {
+  let dragging = false, startX = 0, startY = 0, startW = 0, startH = 0;
+  refs.resizeGrip.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragging = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    const rect = refs.root.getBoundingClientRect();
+    startW = rect.width;
+    startH = rect.height;
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'nwse-resize';
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    const nw = Math.max(280, Math.round(startW + (e.clientX - startX)));
+    const nh = Math.max(180, Math.round(startH + (e.clientY - startY)));
+    api.resize(nw, nh, true);
+  });
+  window.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    document.body.style.userSelect = '';
+    document.body.style.cursor = '';
+  });
+}
 
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') api.close();

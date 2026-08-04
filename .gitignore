@@ -7,6 +7,12 @@ release/
 dist/
 out/
 build/
+packout/
+_check_r/
+_mirror2/
+_vrf/
+_swap.js
+builder-out.json
 *.exe
 *.dmg
 *.AppImage

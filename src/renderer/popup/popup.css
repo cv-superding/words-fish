@@ -80,6 +80,7 @@ html, body {
 }
 
 #root {
+  position: relative;
   height: 100vh;
   display: flex;
   flex-direction: column;
@@ -90,6 +91,22 @@ html, body {
   overflow: hidden;
   -webkit-app-region: no-drag;
 }
+
+.resize-grip {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 14px;
+  height: 14px;
+  cursor: nwse-resize;
+  -webkit-app-region: no-drag;
+  pointer-events: auto;
+  background-image:
+    linear-gradient(135deg, transparent 0%, transparent 40%, var(--text-mute) 40%, var(--text-mute) 45%, transparent 45%, transparent 60%, var(--text-mute) 60%, var(--text-mute) 65%, transparent 65%, transparent 80%, var(--text-mute) 80%, var(--text-mute) 85%, transparent 85%);
+  opacity: 0.45;
+  z-index: 5;
+}
+.resize-grip:hover { opacity: 0.85; }
 
 .dragbar {
   flex: 0 0 30px;

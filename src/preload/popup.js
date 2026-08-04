@@ -15,7 +15,7 @@ contextBridge.exposeInMainWorld('wfPopup', {
   rate: (p) => invoke('study:rate', p),
   markUnknown: () => invoke('study:markUnknown'),
   markKnown: () => invoke('study:markKnown'),
-  resize: (w, h) => invoke('win:resizePopup', w, h),
+  resize: (w, h, force) => invoke('win:resizePopup', w, h, force),
   fireGesture: (gesture) => invoke('gesture:fire', gesture),
   savePosition: (x, y) => invoke('win:savePosition', x, y),
   close: () => invoke('win:hidePopup'),

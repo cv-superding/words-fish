@@ -36,11 +36,23 @@ html, body {
   color: var(--text);
   transition: opacity 0.3s ease;
   -webkit-app-region: no-drag;
+  opacity: 0; /* 收到真实单词前不显示占位(abandon)，避免一闪而过 */
 }
 #root.fading { opacity: 0; }
-.head { display: flex; justify-content: space-between; font-size: 11px; color: var(--mute); }
+.head { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--mute); gap: 8px; }
 .head .brand { color: var(--soft); font-weight: 600; }
-.head .src { color: var(--accent); }
+.head .src { color: var(--accent); margin-right: auto; }
+.btn-close {
+  flex: 0 0 auto;
+  width: 20px; height: 20px; line-height: 18px;
+  border: 0; border-radius: 6px;
+  background: transparent;
+  color: var(--mute);
+  font-size: 12px; cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.btn-close:hover { background: rgba(0,0,0,0.06); color: var(--text); }
+[data-theme="dark"] .btn-close:hover { background: rgba(255,255,255,0.10); }
 .word { font-size: 22px; font-weight: 700; letter-spacing: 0.5px; }
 .phonetic { font-size: 12px; color: var(--mute); font-family: 'Segoe UI Symbol', 'Times New Roman', serif; }
 .phonetic .label { color: var(--mute); font-size: 10px; margin-right: 3px; }

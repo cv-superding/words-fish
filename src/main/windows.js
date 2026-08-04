@@ -34,19 +34,25 @@ function clampToDisplay(x, y, w, h) {
 
 /* --------------------------- 单词悬浮窗 --------------------------- */
 
+let popupUserResized = false;
+
 function createPopup() {
   if (popupWin && !popupWin.isDestroyed()) return popupWin;
 
-  const w = config.get('popup.width', 380);
-  const h = 240;
+  const savedSize = config.get('popup.size', {});
+  const w = (Number.isFinite(savedSize.width) && savedSize.width >= 280) ? savedSize.width : config.get('popup.width', 380);
+  const h = (Number.isFinite(savedSize.height) && savedSize.height >= 180) ? savedSize.height : 240;
 
   popupWin = new BrowserWindow({
     width: w,
     height: h,
+    minWidth: 280,
+    minHeight: 180,
     show: false,
     frame: false,
     transparent: true,
-    resizable: false,
+    resizable: true,
+    thickFrame: true,
     movable: true,
     minimizable: false,
     maximizable: false,
@@ -75,8 +81,17 @@ function createPopup() {
     config.update({ popup: { position: { x, y } } }, { silentReload: true });
   });
 
+  // 用户手动缩放后保存尺寸，后续不再被 scheduleResize 缩回去
+  popupWin.on('resized', () => {
+    if (!popupWin || popupWin.isDestroyed()) return;
+    popupUserResized = true;
+    const [nw, nh] = popupWin.getSize();
+    config.update({ popup: { size: { width: nw, height: nh } } }, { silentReload: true });
+  });
+
   popupWin.on('closed', () => {
     popupWin = null;
+    popupUserResized = false;
   });
 
   return popupWin;
@@ -124,10 +139,19 @@ function isPopupVisible() {
   return !!(popupWin && !popupWin.isDestroyed() && popupWin.isVisible());
 }
 
-function resizePopup(width, height) {
+function resizePopup(width, height, force = false) {
   if (!popupWin || popupWin.isDestroyed()) return;
-  const w = Math.round(width);
-  const h = Math.round(height);
+  let w = Math.round(width);
+  let h = Math.round(height);
+
+  // 用户手动缩放后，不再被 scheduleResize 缩回去
+  // force=true 用于 grip 拖拽过程中，允许自由缩小
+  if (!force && popupUserResized) {
+    const savedSize = config.get('popup.size', {});
+    if (Number.isFinite(savedSize.width) && savedSize.width >= 280) w = Math.max(w, savedSize.width);
+    if (Number.isFinite(savedSize.height) && savedSize.height >= 180) h = Math.max(h, savedSize.height);
+  }
+
   const [cw, ch] = popupWin.getSize();
   if (Math.abs(cw - w) < 2 && Math.abs(ch - h) < 2) return;
   popupWin.setSize(w, h);

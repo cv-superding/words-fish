@@ -144,7 +144,7 @@ function register() {
     return true;
   });
   ipcMain.handle('win:togglePopup', () => wins.togglePopup());
-  ipcMain.handle('win:resizePopup', (_, w, h) => wins.resizePopup(w, h));
+  ipcMain.handle('win:resizePopup', (_, w, h, force) => wins.resizePopup(w, h, force));
   ipcMain.handle('win:resizeBubble', (_, w, h) => wins.resizeBubble(w, h));
   ipcMain.handle('win:holdBubble', () => wins.holdBubble());
   ipcMain.handle('win:hideBubble', () => wins.hideBubble());

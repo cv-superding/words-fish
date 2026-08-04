@@ -34,6 +34,7 @@ function render(payload) {
   refs.meanings.innerHTML = meanings || '<div style="color:var(--mute)">无释义</div>';
 
   refs.root.classList.remove('fading');
+  refs.root.style.opacity = '1'; // 收到真实单词后再显示，避免占位(abandon)闪烁
 
   requestAnimationFrame(() => {
     const h = refs.root.getBoundingClientRect().height;
@@ -53,6 +54,7 @@ document.getElementById('btn-know').addEventListener('click', async () => {
   api.next();
 });
 document.getElementById('btn-open').addEventListener('click', () => api.showPopup());
+document.getElementById('btn-close').addEventListener('click', () => api.close());
 
 api.onWord((p) => render(p));
 api.onFadeOut(() => refs.root.classList.add('fading'));

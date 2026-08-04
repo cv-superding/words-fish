@@ -493,7 +493,8 @@ async function init() {
 
   // 启动时根据配置里的 autoLaunch 同步 checkbox 状态
   const al = await api.app.getAutoLaunch();
-  $('[data-cfg="general.autoLaunch"]').checked = al;
+  const alEl = document.querySelector('[data-cfg="general.autoLaunch"]');
+  if (alEl) alEl.checked = al;
 
   api.onConfigChanged(async ({ section }) => {
     if (!section) return;
