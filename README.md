@@ -714,6 +714,13 @@ npm run test:llm
 
 ## 📝 更新日志
 
+### v1.2.1（2026-08-04）
+- 🐛 修复**滚轮误切换单词**：悬浮窗新增 `wheel` 事件 `stopPropagation` 兜底，杜绝父级 / Electron 级监听误触发切词（内容区自身滚动不受影响）
+- 🐛 修复**软件打不开**：旧构建产物缺 `ffmpeg.dll` 等运行库导致 Windows 报「找不到 ffmpeg.dll」；启动器 `摸鱼背单词.bat` 新增 `ensure_dlls` 自检逻辑，自动从完整构建补齐缺失 DLL（ffmpeg.dll / icudtl.dat / d3dcompiler_47.dll / libEGL.dll / libGLESv2.dll）
+- 🔧 启动器清理 `NODE_OPTIONS` 注入干扰，并优先启动 `packout4` 最新构建
+- 🧹 `.gitignore` 补充构建 / 解包临时目录（`packout4/`、`_a/`、`_a3/` 等）
+- 📌 全量构建（packout / packout3 / release / dist）已统一镜像 v1.2.1 `app.asar`，保证「单词 / 知识」分页签与各修复在任意启动入口均生效
+
 ### v1.2.0（2026-08-04）
 - ✨ 悬浮窗新增**双模式**：顶部「单词 / 知识」分页签，可在单词卡片与 AI 知识条目之间自由切换
 - ✨ 悬浮窗**内嵌知识学习面板**：知识视图直接渲染股票、编程等领域内容，支持流式输出与追问，无需另开窗口

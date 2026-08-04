@@ -357,6 +357,11 @@ api.onConfig(({ section }) => {
 
 window.addEventListener('resize', scheduleResize);
 
+// 滚轮兜底：config 里有 wheelUp/wheelDown 映射到 prevWord/nextWord，
+// 但渲染层没有任何触发器。为防潜在的父级/Electron 级监听误触发切词，
+// 显式 stopPropagation（不 preventDefault，内容区自身的滚动不受影响）。
+window.addEventListener('wheel', (e) => { e.stopPropagation(); }, { passive: true });
+
 (async () => {
   const p = await api.current();
   render(p);
