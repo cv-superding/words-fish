@@ -62,3 +62,5 @@ $RECYCLE.BIN/
 .env
 .env.local
 .env.*.local
+
+_asar_extract2/
