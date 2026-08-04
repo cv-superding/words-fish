@@ -1,6 +1,6 @@
 @echo off
 REM 摸鱼背单词 - 启动器
-REM 自动选择最新构建：优先 packout2（最新双模式版），其次 packout / release / dist
+REM 自动选择最新构建：优先 packout3（带启动错误捕获版），其次 packout2 / packout / release / dist
 set "BASE=%~dp0"
 
 REM 关键：清除可能由外部终端/IDE（如 WorkBuddy 会话）注入的 NODE_OPTIONS
@@ -9,9 +9,9 @@ set NODE_OPTIONS=
 REM 关闭可能残留的旧实例（按单实例锁，旧进程会阻止新版本启动）
 taskkill /f /im WordsFish.exe >nul 2>&1
 
-if exist "%BASE%\packout2\win-unpacked\WordsFish.exe" (
-  cd /d "%BASE%\packout2\win-unpacked"
-  start "" "%BASE%\packout2\win-unpacked\WordsFish.exe"
+if exist "%BASE%\packout3\win-unpacked\WordsFish.exe" (
+  cd /d "%BASE%\packout3\win-unpacked"
+  start "" "%BASE%\packout3\win-unpacked\WordsFish.exe"
   goto :eof
 )
 if exist "%BASE%\packout\win-unpacked\WordsFish.exe" (

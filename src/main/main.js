@@ -4,6 +4,21 @@
  */
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
+
+// ---- 启动期错误可视化：把崩溃写日志 + 弹窗，避免“打不开但无提示” ----
+const CRASH_LOG = path.join(os.tmpdir(), 'wordsfish-crash.log');
+function logCrash(tag, err) {
+  const ts = new Date().toISOString();
+  const msg = `[${ts}] ${tag}: ${err && err.stack ? err.stack : String(err)}\n`;
+  try { fs.appendFileSync(CRASH_LOG, msg); } catch (e) {}
+  try {
+    const { dialog } = require('electron');
+    dialog.showErrorBox('摸鱼背单词启动出错', `${tag}\n\n${err && err.message ? err.message : String(err)}\n\n崩溃日志已写入:\n${CRASH_LOG}`);
+  } catch (e2) {}
+}
+try { fs.appendFileSync(CRASH_LOG, `\n[${new Date().toISOString()}] main.js loaded\n`); } catch (e) {}
 
 const { config } = require('./config');
 const { records } = require('./records');
@@ -19,6 +34,7 @@ const { knowledge } = require('./knowledge');
 // 单实例
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
+  try { fs.appendFileSync(CRASH_LOG, `[${new Date().toISOString()}] second-instance: 另一个实例已持有单实例锁，本进程退出\n`); } catch (e) {}
   app.quit();
   process.exit(0);
 }
@@ -29,32 +45,37 @@ app.setAppUserModelId('com.wordsfish.app');
 app.setName('WordsFish');
 
 app.whenReady().then(() => {
-  // 初始化
-  config.load();
-  records.load();
+  try { fs.appendFileSync(CRASH_LOG, `[${new Date().toISOString()}] whenReady fired\n`); } catch (e) {}
+  try {
+    // 初始化
+    config.load();
+    records.load();
 
-  // 注册 IPC 处理器
-  ipc.register();
+    // 注册 IPC 处理器
+    ipc.register();
 
-  // 托盘
-  tray.create();
+    // 托盘
+    tray.create();
 
-  // 热键
-  hotkeys.applyAll();
+    // 热键
+    hotkeys.applyAll();
 
-  // 自启同步
-  autolaunch.refreshAutostart();
+    // 自启同步
+    autolaunch.refreshAutostart();
 
-  // 调度
-  scheduler.start();
+    // 调度
+    scheduler.start();
 
-  // 首次启动引导：打开设置窗口让用户先配置词库/推送/AI，
-  // 避免“一打开就是个单词气泡、还关不掉”的困惑。之后再启动按 startMinimized 静默待在托盘。
-  const isFirstRun = !config.get('general.firstRunDone', false);
-  if (!minimizedStart && (isFirstRun || !config.get('general.startMinimized', true))) {
-    wins.openSettings();
+    // 首次启动引导：打开设置窗口让用户先配置词库/推送/AI，
+    // 避免“一打开就是个单词气泡、还关不掉”的困惑。之后再启动按 startMinimized 静默待在托盘。
+    const isFirstRun = !config.get('general.firstRunDone', false);
+    if (!minimizedStart && (isFirstRun || !config.get('general.startMinimized', true))) {
+      wins.openSettings();
+    }
+    try { config.update({ general: { firstRunDone: true } }, { silentReload: true }); } catch (e) { /* ignore */ }
+  } catch (e) {
+    logCrash('init', e);
   }
-  try { config.update({ general: { firstRunDone: true } }, { silentReload: true }); } catch (e) { /* ignore */ }
 });
 
 app.on('second-instance', () => {
@@ -76,8 +97,8 @@ app.on('before-quit', () => {
 });
 
 process.on('uncaughtException', (err) => {
-  console.error('未捕获异常:', err);
+  logCrash('uncaughtException', err);
 });
 process.on('unhandledRejection', (err) => {
-  console.error('未处理 Promise 拒绝:', err);
+  logCrash('unhandledRejection', err);
 });
