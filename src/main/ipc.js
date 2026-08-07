@@ -181,7 +181,7 @@ function register() {
   });
   ipcMain.handle('win:alwaysOnTop', (e, flag) => {
     const w = e.sender.getOwnerBrowserWindow();
-    if (w) w.setAlwaysOnTop(!!flag, 'screen-saver');
+    if (w) w.setAlwaysOnTop(!!flag, !!flag ? 'screen-saver' : 'normal');
     return true;
   });
   ipcMain.handle('win:positionPopup', () => {

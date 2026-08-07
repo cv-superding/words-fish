@@ -34,6 +34,19 @@ function detectHost() {
   return host;
 }
 
+// 读 config.popup.theme 写到 body[data-theme]，与 popup 同步主题。
+// 知识页以前 CSS 写死浅色、且 webview 收不到主窗口广播，所以切主题不会变。
+// popup.js 会把 config:changed 转发到 webview（wv.send），这里监听后即应用。
+// 注意：api.config.get() 是 ipcRenderer.invoke 的 Promise，必须 await。
+// 之前漏 await 会读到 undefined → theme 一直 fallback 到 'light'，所以大背景不变。
+async function applyTheme() {
+  try {
+    const cfg = (api.config && api.config.get) ? await api.config.get() : null;
+    const theme = (cfg && cfg.popup && cfg.popup.theme) || 'light';
+    document.body.dataset.theme = theme;
+  } catch (e) { /* standalone 或 webview 未就绪时静默 */ }
+}
+
 function applyPopupLayout() {
   // popup 模式：去掉侧栏（领域 chip / 会话列表），砍掉多余按钮与模式切换
   const sidebar = document.querySelector('.sidebar');
@@ -67,11 +80,15 @@ async function init() {
   bindUI();
   // popup 模式：必须在 renderChips 之前改 DOM，否则侧栏/模式 row 还在
   if (host === 'popup') applyPopupLayout();
+  // 与 popup 同步主题：必须在 connect dot / chips 渲染前设好，
+  // 否则首次渲染会按默认浅色出，再切主题会有闪烁。
+  await applyTheme();
 
   api.onToken(onToken);
   api.onDone(onDone);
-  api.onConfigChanged(async ({ section }) => {
-    if (!section || section === 'llm') await updateConnDot();
+  api.onConfigChanged(async () => {
+    await applyTheme();
+    await updateConnDot();
   });
   api.onOpenDomain((domain) => openDomain(domain));
 

@@ -58,7 +58,7 @@ function createPopup() {
     minimizable: false,
     maximizable: false,
     skipTaskbar: true,
-    alwaysOnTop: true,
+    alwaysOnTop: config.get('popup.pinned', false),
     hasShadow: false,
     backgroundColor: '#00000000',
     fullscreenable: false,
@@ -73,9 +73,16 @@ function createPopup() {
     },
   });
 
-  popupWin.setAlwaysOnTop(true, 'screen-saver');
-  popupWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  popupWin.setAlwaysOnTop(config.get('popup.pinned', false), config.get('popup.pinned', false) ? 'screen-saver' : 'normal');
+  // 注意：不要传 visibleOnFullScreen:true —— 在 Windows 上那会强制把窗口设为 TOPMOST（永远置顶），
+  // 导致点别的窗口悬浮窗也不下去。去掉后悬浮窗是普通窗口，点别处会让它失焦。
+  popupWin.setVisibleOnAllWorkspaces(true);
   popupWin.loadFile(R('popup', 'index.html'));
+
+  // 未置顶时，焦点离开（点别的窗口 / 切到别的应用）就自动收起悬浮窗
+  popupWin.on('blur', () => {
+    if (!config.get('popup.pinned')) hidePopup();
+  });
 
   popupWin.on('moved', () => {
     if (!config.get('popup.rememberPosition')) return;
@@ -125,8 +132,10 @@ function showPopup() {
   const win = createPopup();
   if (!win.isVisible()) positionPopup(win);
   win.setOpacity(1);
-  win.showInactive();
-  win.setAlwaysOnTop(true, 'screen-saver');
+  // 用 show() 而非 showInactive()：让窗口真正获得焦点，这样“点别处”才会触发 blur 自动收起。
+  // （之前 showInactive 不抢焦点，窗口从未聚焦，blur 不会触发，悬浮窗就赖着不走）
+  win.show();
+  win.setAlwaysOnTop(config.get('popup.pinned', false), config.get('popup.pinned', false) ? 'screen-saver' : 'normal');
   return win;
 }
 

@@ -97,8 +97,7 @@ function render(payload) {
   refs.root.style.minWidth = `${v.width || 380}px`;
   refs.body.style.fontSize = `${v.fontSize || 15}px`;
   refs.btnPin.classList.toggle('active', !!v.pinned);
-
-  state.revealed = !v.meaningHidden;
+  state.pinned = !!v.pinned;
 
   const w = payload.word;
   const wordBlock = `<div class="word-block"><span class="word">${escapeHtml(w.w)}</span><button class="speak" id="speak-btn">🔊 朗读</button></div>`;
@@ -208,6 +207,13 @@ function setupKnowledgeWebview() {
     const sep = knowledgeHtml.includes('?') ? '&' : '?';
     wv.src = `${knowledgeHtml}${sep}host=popup`;
   });
+
+  // webview 收不到主进程对顶层 BrowserWindow 的 config:changed 广播
+  //（wins.broadcast 只发到父 webContents），所以 popup 收到的配置变化需要转发给 webview，
+  // 这样切主题时知识页能立即 applyTheme()，而不是等下次刷新。
+  api.onConfig((payload) => {
+    try { wv.send('config:changed', payload); } catch (e) {}
+  });
 }
 
 /* ----------------------------- 手势 ----------------------------- */
@@ -230,12 +236,14 @@ function handleClick(e) {
   }
   state.clickPending = setTimeout(() => {
     state.clickPending = null;
-    const gesture = state.revealed ? 'click' : 'toggleMeaning';
-    fireGesture(gesture);
     if (!state.revealed) {
+      // 释义已隐藏：单击直接显示，不再额外触发 toggleMeaning 手势，
+      // 否则 onGesture 会把刚显示的释义又翻转回去（无反应）。
       state.revealed = true;
       if (state.payload) render(state.payload);
+      return;
     }
+    fireGesture(state.gestures.click || 'click');
   }, 280);
 }
 
@@ -290,8 +298,11 @@ refs.btnNext.addEventListener('click', async (e) => {
 refs.btnPin.addEventListener('click', (e) => {
   e.stopPropagation();
   state.pinned = !state.pinned;
-  api.alwaysOnTop(state.pinned);
   refs.btnPin.classList.toggle('active', state.pinned);
+  // 置顶必须写进 config.popup.pinned：失焦自动收起逻辑（windows.js 的 blur handler）
+  // 判断的是 config 值，按钮若只改窗口状态不落配置，点别的窗口仍会被收起。
+  api.alwaysOnTop(state.pinned);
+  api.configUpdate({ popup: { pinned: state.pinned } }, { silentReload: true }).catch(() => {});
 });
 
 refs.meaningPanel.addEventListener('click', handleClick);
@@ -350,7 +361,16 @@ window.addEventListener('keydown', (e) => {
 
 /* ----------------------------- 初始化 ----------------------------- */
 
-api.onWord((payload) => render(payload));
+// 加载新词：根据“自测模式”设置初始释义显隐，再渲染。
+// 注意：revealed 只在“新词”时按 meaningHidden 计算，切换释义显隐由用户手动控制，
+// 不能在 render 里重置（否则点“隐藏释义”后 render 会立刻把它改回 true，导致没反应）。
+function loadWord(payload) {
+  if (!payload) return;
+  state.revealed = !payload.view.meaningHidden;
+  render(payload);
+}
+
+api.onWord(loadWord);
 api.onGesture((p) => {
   if (!p) return;
   if (p.gesture === 'toggleMeaning') {
@@ -361,8 +381,12 @@ api.onGesture((p) => {
   }
 });
 api.onConfig(({ section }) => {
-  if (!section) return;
-  api.current().then((p) => { if (p) render(p); });
+  // 之前 `if (!section) return;` 会让普通 config.update（如切换主题）广播 section=null 时被跳过，
+  // 导致悬浮窗不立即重渲染，要点"下一个单词"才跟上。悬浮窗的所有可见属性都来自 config，
+  // 任何变化都该即时反映——去掉守卫即可，settings 是独立窗口，无输入冲突。
+  // 仍跳过 llm 类的变化（不影响悬浮窗显示，省一次 IPC）。
+  if (section === 'llm') return;
+  api.current().then((p) => { if (p) loadWord(p); });
 });
 
 window.addEventListener('resize', scheduleResize);
@@ -374,7 +398,7 @@ window.addEventListener('wheel', (e) => { e.stopPropagation(); }, { passive: tru
 
 (async () => {
   const p = await api.current();
-  render(p);
+  loadWord(p);
   setupTabs();
   setupKnowledgeWebview();
   try { await api.requestAssets(); } catch (e) {}

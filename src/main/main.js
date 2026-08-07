@@ -2,7 +2,6 @@
 /**
  * 主入口
  */
-const { app, BrowserWindow } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -18,6 +17,11 @@ function logCrash(tag, err) {
     dialog.showErrorBox('摸鱼背单词启动出错', `${tag}\n\n${err && err.message ? err.message : String(err)}\n\n崩溃日志已写入:\n${CRASH_LOG}`);
   } catch (e2) {}
 }
+// 极早期兜底：require 阶段（模块顶层抛错）也会记录，避免“闪退且无日志”
+process.on('uncaughtException', (err) => { try { logCrash('early-uncaughtException', err); } catch (e) {} });
+process.on('unhandledRejection', (err) => { try { logCrash('early-unhandledRejection', err); } catch (e) {} });
+
+const { app, BrowserWindow } = require('electron');
 try { fs.appendFileSync(CRASH_LOG, `\n[${new Date().toISOString()}] main.js loaded\n`); } catch (e) {}
 
 const { config } = require('./config');

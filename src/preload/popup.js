@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('wfPopup', {
   fireGesture: (gesture) => invoke('gesture:fire', gesture),
   savePosition: (x, y) => invoke('win:savePosition', x, y),
   getPopup: () => invoke('config:getSection', 'popup'),
+  configUpdate: (patch, meta) => invoke('config:update', patch, meta),
   setView: (view) => invoke('win:setView', view),
   requestAssets: () => invoke('win:requestAssets'),
   close: () => invoke('win:hidePopup'),
