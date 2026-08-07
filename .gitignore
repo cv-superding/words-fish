@@ -59,6 +59,7 @@ coverage/
 noWork.png
 _make_icons.py
 _tmp*/
+_viz*/
 .nyc_output/
 *.tmp
 
