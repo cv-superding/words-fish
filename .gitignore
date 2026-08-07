@@ -85,3 +85,6 @@ $RECYCLE.BIN/
 .env.*.local
 
 _asar_extract2/
+_viz*/
+_viz_*.png
+.gitignore.test
