@@ -12,7 +12,7 @@ taskkill /f /im WordsFish.exe >nul 2>&1
 taskkill /f /im words-fish.exe >nul 2>&1
 
 REM 按优先级选构建并启动（只认已验证构建）
-for %%P in (app-v13 app-v12 app-v11 app-v10 app-v9 app-v8 app-v7 app-v6 app-v5 app-v4 app-v3 app-v2 app-final) do (
+for %%P in (app-v14 app-v13 app-v12 app-v11 app-v10 app-v9 app-v8 app-v7 app-v6 app-v5 app-v4 app-v3 app-v2 app-final) do (
   if exist "%BASE%%%P\win-unpacked\WordsFish.exe" (
     echo [启动器] 正在启动: %%P
     cd /d "%BASE%%%P\win-unpacked"
