@@ -56,6 +56,9 @@ tests/_scratch/
 tests/dict-import/
 tests/verify-report.txt
 coverage/
+noWork.png
+_make_icons.py
+_tmp*/
 .nyc_output/
 *.tmp
 
