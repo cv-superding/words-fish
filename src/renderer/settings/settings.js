@@ -303,7 +303,126 @@ function renderHotkeyList() {
   };
 }
 
-/* ============================ 手势映射 ============================ */
+/* ============================ 手势映射 ============================
+ * 自定义下拉（替代原生 <select>）。
+ * 原因：Electron 33 = Chromium 130，appearance: base-select / ::picker(select)
+ * 还没启用，原生下拉面板的打开态（系统蓝条高亮）无法用 CSS 美化——必须自绘。
+ * 设计：触发器 + portal 到 body 的 popup，保证打开面板也现代、且不被 .content 的 overflow 裁剪。
+ */
+let _csCurrent = null;
+function closeCsPopup() {
+  if (!_csCurrent) return;
+  const { cs, pop } = _csCurrent;
+  if (pop && pop.parentNode) pop.parentNode.removeChild(pop);
+  const tr = cs && cs.querySelector('.cs-trigger');
+  if (tr) tr.classList.remove('is-open');
+  if (cs) cs.dataset.open = '';
+  _csCurrent = null;
+}
+function ensureCsGlobals() {
+  if (ensureCsGlobals._d) return; ensureCsGlobals._d = 1;
+  // 外部点击关闭（click 阶段；触发器自己处理开关，不需 stopPropagation）
+  document.addEventListener('click', (e) => {
+    if (!_csCurrent) return;
+    if (e.target.closest('.cs-pop') || e.target.closest('.cs')) return;
+    closeCsPopup();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (!_csCurrent) return;
+    if (e.key === 'Escape') { e.preventDefault(); closeCsPopup(); }
+  });
+  // 滚动/缩放时关闭：popup 在 body，触发器在滚动容器内，滚动会错位
+  window.addEventListener('scroll', () => { if (_csCurrent) closeCsPopup(); }, true);
+  window.addEventListener('resize', () => { if (_csCurrent) closeCsPopup(); });
+}
+function setCsValue(cs, value) {
+  const opts = cs._csOpts || [];
+  const cur = opts.find((o) => o.key === value) || opts[0];
+  if (!cur) return;
+  cs.dataset.value = cur.key;
+  const lbl = cs.querySelector('.cs-label');
+  if (lbl) lbl.textContent = cur.label;
+}
+function openCsPopup(cs) {
+  closeCsPopup();
+  ensureCsGlobals();
+  const trigger = cs.querySelector('.cs-trigger');
+  const opts = cs._csOpts || [];
+  const cur = cs.dataset.value;
+  const rect = trigger.getBoundingClientRect();
+  const pop = document.createElement('div');
+  pop.className = 'cs-pop';
+  pop.setAttribute('role', 'listbox');
+  pop.innerHTML = opts.map((o) => `
+    <div class="cs-opt${o.key === cur ? ' is-cur' : ''}" role="option" data-value="${esc(o.key)}" aria-selected="${o.key === cur}">
+      <svg class="cs-check" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.2 L5 8.7 L9.7 3.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="cs-opt-label">${esc(o.label)}</span>
+    </div>`).join('');
+  document.body.appendChild(pop);
+  // 先隐藏测量，再定位（避免出现位置闪烁）
+  pop.style.visibility = 'hidden';
+  pop.style.display = 'block';
+  const ph = pop.offsetHeight;
+  pop.style.visibility = '';
+  pop.style.display = '';
+  pop.style.minWidth = rect.width + 'px';
+  const vh = window.innerHeight;
+  const spaceBelow = vh - rect.bottom - 8;
+  const desired = Math.min(opts.length * 36 + 12, 300);
+  const maxH = Math.max(140, Math.min(desired, spaceBelow > 200 ? desired : Math.max(140, spaceBelow - 4)));
+  pop.style.maxHeight = maxH + 'px';
+  // 智能翻转：下方空间不够且上方够，则朝上
+  let top = rect.bottom + 6;
+  if (spaceBelow < 180 && rect.top > maxH + 16) { top = rect.top - ph - 6; pop.dataset.flip = 'up'; }
+  pop.style.left = rect.left + 'px';
+  pop.style.top = top + 'px';
+  requestAnimationFrame(() => pop.classList.add('cs-pop-open'));
+  trigger.classList.add('is-open');
+  cs.dataset.open = '1';
+  // 初始 active = current
+  const firstCur = pop.querySelector('.cs-opt.is-cur') || pop.querySelector('.cs-opt');
+  if (firstCur) firstCur.classList.add('is-active');
+  // 选项点击
+  pop.addEventListener('click', (ev) => {
+    const opt = ev.target.closest('.cs-opt');
+    if (!opt) return;
+    const v = opt.dataset.value;
+    setCsValue(cs, v);
+    closeCsPopup();
+    if (cs._csOnChange) cs._csOnChange(v);
+  });
+  // hover → active（视觉同步键盘 active）
+  pop.querySelectorAll('.cs-opt').forEach((o) => {
+    o.addEventListener('mouseenter', () => {
+      pop.querySelectorAll('.cs-opt').forEach((x) => x.classList.remove('is-active'));
+      o.classList.add('is-active');
+    });
+  });
+  // popup 键盘
+  pop.tabIndex = -1;
+  pop.addEventListener('keydown', (e) => {
+    const all = [...pop.querySelectorAll('.cs-opt')];
+    const idx = all.indexOf(pop.querySelector('.cs-opt.is-active'));
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const n = all[Math.min(all.length - 1, Math.max(0, idx + 1))] || all[0];
+      all.forEach((x) => x.classList.remove('is-active')); n.classList.add('is-active');
+      n.scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const n = all[Math.max(0, (idx < 0 ? all.length : idx) - 1)] || all[all.length - 1];
+      all.forEach((x) => x.classList.remove('is-active')); n.classList.add('is-active');
+      n.scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const a = pop.querySelector('.cs-opt.is-active'); if (a) a.click();
+    } else if (e.key === 'Escape') {
+      e.preventDefault(); closeCsPopup(); trigger.focus();
+    }
+  });
+  pop.focus({ preventScroll: true });
+  _csCurrent = { cs, pop, opts };
+}
 
 function renderGestureList() {
   const events = state.constants?.GESTURE_EVENTS || [];
@@ -314,22 +433,31 @@ function renderGestureList() {
     const cur = getByPath(state.cfg, `gestures.${ev.key}`) || 'none';
     const el = document.createElement('div');
     el.className = 'gesture-item';
-    el.innerHTML = `
-      <div class="label">${esc(ev.label)}</div>
-      <select data-gesture="${esc(ev.key)}">
-        ${actions.map((a) => `<option value="${esc(a.key)}" ${a.key === cur ? 'selected' : ''}>${esc(a.label)}</option>`).join('')}
-      </select>`;
+    const curOpt = actions.find((a) => a.key === cur) || actions[0];
+    el.innerHTML = `<div class="label">${esc(ev.label)}</div>`;
+    const cs = document.createElement('div');
+    cs.className = 'cs';
+    cs.dataset.key = ev.key;
+    cs.dataset.value = cur;
+    cs._csOpts = actions;
+    cs._csOnChange = async (v) => {
+      await api.config.update({ gestures: { [ev.key]: v } });
+      const cfg = await api.config.get();
+      state.cfg = cfg;
+      flashStatus('手势已更新');
+    };
+    cs.innerHTML = `
+      <button type="button" class="cs-trigger" aria-haspopup="listbox" aria-expanded="false">
+        <span class="cs-label">${esc(curOpt ? curOpt.label : cur)}</span>
+        <svg class="cs-chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5 L6 8 L9 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>`;
+    cs.querySelector('.cs-trigger').addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (cs.dataset.open) closeCsPopup(); else openCsPopup(cs);
+    });
+    el.appendChild(cs);
     list.appendChild(el);
   }
-  list.onchange = async (e) => {
-    const sel = e.target.closest('select');
-    if (!sel) return;
-    const k = sel.dataset.gesture;
-    await api.config.update({ gestures: { [k]: sel.value } });
-    const cfg = await api.config.get();
-    state.cfg = cfg;
-    flashStatus('手势已更新');
-  };
 }
 
 /* ============================ 统计 ============================ */

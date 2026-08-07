@@ -332,3 +332,113 @@ html, body {
 .content::-webkit-scrollbar { width: 8px; }
 .content::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.16); border-radius: 4px; }
 .content::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.32); }
+
+/* ============================================================
+   自定义下拉组件 .cs（替代原生 <select>，摆脱复古观感）
+   关闭态 = .cs-trigger（按钮外观）；打开面板 = portal 到 body 的 .cs-pop
+   ============================================================ */
+.cs { position: relative; width: 100%; min-width: 160px; }
+.cs-trigger {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+.cs-trigger:hover { border-color: #cdd2d9; background: #fff; }
+.cs-trigger.is-open,
+.cs-trigger:focus-visible {
+  border-color: var(--accent);
+  background: #fff;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  outline: none;
+}
+.cs-label {
+  flex: 1; text-align: left;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cs-chev {
+  width: 14px; height: 14px; flex-shrink: 0;
+  color: var(--text-mute);
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+.cs-trigger.is-open .cs-chev { transform: rotate(180deg); color: var(--accent); }
+
+/* 弹出面板（portal → body，position:fixed 用视口坐标定位） */
+.cs-pop {
+  position: fixed;
+  z-index: 9999;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px;
+  box-shadow: 0 10px 30px rgba(20, 30, 40, 0.16);
+  overflow-y: auto;
+  opacity: 0;
+  transform: translateY(-6px) scale(0.98);
+  transform-origin: top center;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.cs-pop[data-flip="up"] {
+  transform-origin: bottom center;
+  transform: translateY(6px) scale(0.98);
+}
+.cs-pop.cs-pop-open { opacity: 1; transform: translateY(0) scale(1); }
+.cs-pop::-webkit-scrollbar { width: 8px; }
+.cs-pop::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.16); border-radius: 4px; }
+
+.cs-opt {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  font-size: 13px;
+  color: var(--text-soft);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.12s, color 0.12s;
+}
+.cs-opt:hover { background: var(--surface-2); color: var(--text); }
+.cs-opt.is-active { background: var(--accent-soft); color: var(--accent); }
+.cs-opt.is-cur { color: var(--text); font-weight: 500; }
+.cs-check {
+  width: 14px; height: 14px; flex-shrink: 0;
+  color: var(--accent);
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.cs-opt.is-cur .cs-check { opacity: 1; }
+.cs-opt-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ============================================================
+   仍保留的原生 <select>（push.channel 等）：去系统外观、换自绘箭头
+   ============================================================ */
+.field select {
+  width: 100%;
+  padding: 8px 34px 8px 12px;
+  background-color: var(--surface-2);
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2012%2012'%3E%3Cpath%20d='M3%204.5%20L6%208%20L9%204.5'%20fill='none'%20stroke='%2386909c'%20stroke-width='1.6'%20stroke-linecap='round'%20stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+  appearance: none; -webkit-appearance: none;
+  transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
+}
+.field select:hover { border-color: #cdd2d9; background-color: #fff; }
+.field select:focus {
+  outline: none;
+  border-color: var(--accent);
+  background-color: #fff;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}

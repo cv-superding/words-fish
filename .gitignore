@@ -16,13 +16,7 @@ packout6/
 app-build/
 app-dist/
 app-final/
-app-v2/
-app-v3/
-app-v4/
-app-v5/
-app-v6/
-app-v7/
-app-v8/
+app-v*/
 -Delete/
 _recovery/
 _asar_extract/
