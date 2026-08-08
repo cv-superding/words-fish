@@ -34,7 +34,7 @@
       "icon": "assets/icon.ico"
     },
     "directories": {
-      "output": "app-v14",
+      "output": "app-v15",
       "buildResources": "assets"
     }
   }
