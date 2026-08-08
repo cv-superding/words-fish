@@ -41,16 +41,10 @@ html, body {
 }
 .t-left { display: flex; align-items: center; gap: 10px; font-weight: 600; color: var(--text); }
 .t-left .logo {
-  width: 18px; height: 18px;
-  background: linear-gradient(0deg, var(--accent) 0%, #0aab8d 100%);
-  border-radius: 5px;
-  position: relative;
-}
-.t-left .logo::after {
-  content: '';
-  position: absolute; left: 4px; top: 8px;
-  width: 10px; height: 3px;
-  background: white; border-radius: 2px;
+  width: 32px; height: 32px;
+  border-radius: 6px;
+  object-fit: contain;
+  display: block;
 }
 .t-right { display: flex; align-items: center; gap: 6px; -webkit-app-region: no-drag; }
 .t-right button {
