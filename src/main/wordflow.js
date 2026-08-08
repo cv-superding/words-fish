@@ -14,11 +14,12 @@ let cursor = -1; // history 中的位置
 let currentBookId = null;
 
 function getBook() {
+  // 注意：这是“读取”路径，被 buildPayload / next / statsSnapshot 反复调用，
+  // 不应在此写入配置（旧逻辑会在 activeBookId 失效时 config.update，触发广播，
+  // 既引入副作用又有潜在回环风险）。resolveBook 在 id 失效时自动回退到可用词库，
+  // 真正的纠错发生在用户显式切词库（dict:setActive）时。
   const want = config.get('study.activeBookId');
   const book = dict.resolveBook(want);
-  if (book && book.id !== want) {
-    config.update({ study: { activeBookId: book.id } });
-  }
   currentBookId = book ? book.id : null;
   return book;
 }

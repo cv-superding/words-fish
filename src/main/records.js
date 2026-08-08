@@ -35,7 +35,7 @@ function clamp(v, lo, hi) {
 class Records {
   constructor() {
     this.map = {}; // key -> record
-    this.stats = { days: {}, totals: { learned: 0, reviewed: 0, marked: 0 } };
+    this.stats = { days: {}, totals: { learned: 0, reviewed: 0, marked: 0, exposed: 0 } };
     this._t1 = null;
     this._t2 = null;
   }
@@ -263,9 +263,9 @@ class Records {
 
     const pool = [];
     // 生词优先
-    if (opts.priorityMarked !== false && marked.length) pool.push({ list: marked, weight: 0.35 });
-    if (opts.reviewEnabled !== false && due.length) pool.push({ list: due, weight: (1 - newRatio) * (marked.length ? 0.65 : 1) });
-    if (fresh.length) pool.push({ list: fresh, weight: newRatio });
+    if (opts.priorityMarked !== false && marked.length) pool.push({ list: marked, weight: 0.35, source: 'marked' });
+    if (opts.reviewEnabled !== false && due.length) pool.push({ list: due, weight: (1 - newRatio) * (marked.length ? 0.65 : 1), source: 'due' });
+    if (fresh.length) pool.push({ list: fresh, weight: newRatio, source: 'new' });
 
     if (!pool.length) {
       // 全部已掌握且未到期 → 随机复现一个，避免无词可推
@@ -285,7 +285,8 @@ class Records {
     }
     const list = chosen.list;
     const idx = list[Math.floor(Math.random() * list.length)];
-    const source = chosen.list === fresh ? 'new' : chosen.list === marked ? 'marked' : 'due';
+    // 用显式 source 标记判定来源，避免依赖 pool 中 list 与 fresh/marked/due 的引用相等（脆弱）。
+    const source = chosen.source || 'random';
     return { word: words[idx], index: idx, source };
   }
 

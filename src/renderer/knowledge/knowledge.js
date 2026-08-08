@@ -134,9 +134,36 @@ async function renderSessions() {
   for (const s of state.sessions) {
     const el = document.createElement('div');
     el.className = 'session-item' + (state.current && state.current.id === s.id ? ' active' : '');
+    el.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px';
     const when = relTime(s.updatedAt);
-    el.innerHTML = `<div class="s-name">${esc(s.domainName)}</div><div class="s-meta">${s.messages} 条 · ${when}</div>`;
-    el.addEventListener('click', () => openSession(s.id));
+    el.innerHTML = `
+      <div class="s-main">
+        <div class="s-name">${esc(s.domainName)}</div>
+        <div class="s-meta">${s.messages} 条 · ${when}</div>
+      </div>
+      <button class="s-del" title="删除会话" data-del="${esc(s.id)}"
+        style="flex:0 0 auto;border:0;background:transparent;cursor:pointer;font-size:14px;opacity:.55;padding:2px 4px;border-radius:6px"
+        onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.55">🗑</button>`;
+    el.addEventListener('click', (e) => {
+      if (e.target.closest('.s-del')) return;
+      openSession(s.id);
+    });
+    const delBtn = el.querySelector('.s-del');
+    if (delBtn) delBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (!confirm('删除该学习会话？历史记录将一并清除。')) return;
+      const ok = await api.delete(s.id);
+      if (ok) {
+        if (state.current && state.current.id === s.id) {
+          state.current = null;
+          $('current-domain').textContent = '未选择领域';
+          $('welcome').style.display = '';
+          $('messages').innerHTML = '';
+        }
+        await renderSessions();
+        flash('会话已删除');
+      }
+    });
     host.appendChild(el);
   }
 }

@@ -80,14 +80,17 @@ function request(opts) {
       const status = res.statusCode;
       const respHeaders = res.headers;
       if (onData) {
+        const acc = [];
         res.on('data', (chunk) => {
           try {
             onData(chunk);
           } catch (e) {
             /* ignore */
           }
+          // 同时累积原始 body：流式请求若返回 4xx/5xx，真实错误体由此解析（见 llm.js）。
+          acc.push(chunk);
         });
-        res.on('end', () => finish(resolve, { status, headers: respHeaders, body: null }));
+        res.on('end', () => finish(resolve, { status, headers: respHeaders, body: Buffer.concat(acc).toString('utf8') }));
         res.on('error', (e) => finish(reject, e));
       } else {
         const acc = [];
@@ -131,6 +134,11 @@ function request(opts) {
             reqRef.end(body);
           });
           tlsSocket.on('error', (e) => finish(reject, e));
+        });
+        // 代理“接住 TCP 但不回 CONNECT 响应”时，conn 既不 emit error 也不进 connect，
+        // 必须有超时来兜底，否则 Promise 永不 settle、socket 与闭包泄漏、LLM 请求卡死。
+        conn.on('timeout', () => {
+          try { conn.destroy(new Error('代理 CONNECT 超时')); } catch (e) {}
         });
         conn.on('error', (e) => finish(reject, e));
         conn.end();

@@ -53,6 +53,9 @@ const DEFAULTS = {
     position: { x: null, y: null },
     autoCloseSec: 0, // 0 表示不自动关闭
     pinned: false,
+    // 窗口尺寸持久化形状（运行时由 windows.js 写入）；列入默认值保证与持久化结构一致。
+    size: { width: 380, height: 240 },
+    knowledgeSize: { width: 520, height: 440 },
   },
 
   // 手势映射

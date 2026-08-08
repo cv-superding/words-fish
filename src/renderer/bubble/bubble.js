@@ -44,14 +44,17 @@ function render(payload) {
 }
 
 document.getElementById('btn-skip').addEventListener('click', async () => {
+  // 旧实现：markUnknown() → hold()（清掉自动关闭定时器）→ next()，但 next() 不广播，
+  // 气泡只监听 word:update 重绘，于是气泡停在旧单词且永不关闭（被 hold 冻住）。
+  // 改为：用 markUnknown + next 返回的新 payload 直接 render，保留自动关闭定时器。
   await api.markUnknown();
-  api.hold();
-  api.next();
+  const np = await api.next();
+  if (np) render(np);
 });
 document.getElementById('btn-know').addEventListener('click', async () => {
   await api.markKnown();
-  api.hold();
-  api.next();
+  const np = await api.next();
+  if (np) render(np);
 });
 document.getElementById('btn-open').addEventListener('click', () => api.showPopup());
 document.getElementById('btn-close').addEventListener('click', () => api.close());

@@ -48,8 +48,9 @@ function buildTemplate() {
     { label: `今日: 已学 ${stats.learned || 0} · 已复习 ${stats.reviewed || 0} · 生词 ${stats.marked || 0}`, enabled: false },
     { type: 'separator' },
     {
+      // 注意：菜单项的 accelerator 仅在菜单“打开时”生效，并非全局热键；
+      // 真正的全局快捷键由 hotkeys.js 注册。这里标 Shift+X 会误导用户以为托盘菜单响应它，故去掉。
       label: '立即推送单词',
-      accelerator: 'Shift+X',
       click: () => notifier.push('tray'),
     },
     {
@@ -96,8 +97,8 @@ function buildTemplate() {
       click: () => wins.openKnowledge(),
     },
     {
+      // 去掉误导性的 accelerator：Ctrl+, 并非本项目注册的全局热键，菜单打开时才生效，易误导。
       label: '设置面板...',
-      accelerator: 'Ctrl+,',
       click: () => wins.openSettings(),
     },
     {
@@ -132,8 +133,8 @@ function create() {
   tray.setToolTip('摸鱼背单词');
   rebuild();
 
-  // 双击托盘直接弹悬浮窗
-  tray.on('double-click', () => wins.togglePopup());
+  // 仅保留单击切换悬浮窗。双击会先触发 click 再触发 double-click，
+  // 两次 togglePopup 互相抵消（伴随一次显隐闪烁），故不绑定 double-click。
   tray.on('click', () => wins.togglePopup());
 
   // 定时刷新菜单（用于显示今日统计变化）

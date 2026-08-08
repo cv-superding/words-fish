@@ -9,6 +9,11 @@ const fs = require('fs');
 const paths = require('./paths');
 const llm = require('./llm');
 
+// 历史窗口上限，防止 token 成本线性膨胀并最终撑爆模型上下文窗口
+const MAX_CONTEXT_MESSAGES = 20; // 发给 LLM 的历史轮次上限
+const MAX_PERSIST_MESSAGES = 60; // 持久化历史上限，超出滚动丢弃
+const MAX_SESSIONS = 50; // 会话数量上限，超出删除最旧者，避免 knowledge.json 无限增长
+
 /* ----------------------------- 领域预设 ----------------------------- */
 
 const PRESETS = [
@@ -142,6 +147,7 @@ class Knowledge {
 
   saveNow() {
     try {
+      this._pruneSessions();
       paths.ensureDir(paths.userData);
       const arr = [...this.sessions.values()].map((s) => ({
         id: s.id,
@@ -190,6 +196,7 @@ class Knowledge {
     if (found) return found;
     const s = { id: this._newId(), domain, history: [], createdAt: Date.now(), updatedAt: Date.now() };
     this.sessions.set(s.id, s);
+    this._pruneSessions();
     this.saveDebounced();
     return s;
   }
@@ -215,7 +222,9 @@ class Knowledge {
   buildMessages(session, type, input) {
     const p = this._preset(session.domain);
     const messages = [{ role: 'system', content: p.system }];
-    for (const m of session.history) messages.push({ role: m.role, content: m.content });
+    // 仅取最近 MAX_CONTEXT_MESSAGES 条历史作为上下文，避免长对话 token 爆炸 / 超窗
+    const ctx = session.history.slice(-MAX_CONTEXT_MESSAGES);
+    for (const m of ctx) messages.push({ role: m.role, content: m.content });
 
     let userContent;
     if (type === 'card') {
@@ -241,14 +250,27 @@ class Knowledge {
     if (!session) throw new Error('知识会话不存在，请重新打开领域');
     const { messages, userContent } = this.buildMessages(session, type, input);
 
+    let result;
+    try {
+      result = await llm.chatCompletions({
+        messages,
+        stream: true,
+        onToken: hooks.onToken,
+        signal: hooks.signal,
+      });
+    } catch (e) {
+      // LLM 失败：不要把用户提问写入持久化历史，否则下次打开会话会看到一条“无回复”的提问。
+      // 渲染端（knowledge 页 send()）已对异常做了兜底展示，这里直接上抛即可。
+      throw e;
+    }
+
+    // 仅当 LLM 成功返回时才落盘历史，保证 (user, assistant) 成对、不留悬空消息。
     session.history.push({ role: 'user', content: userContent });
-    const result = await llm.chatCompletions({
-      messages,
-      stream: true,
-      onToken: hooks.onToken,
-      signal: hooks.signal,
-    });
     session.history.push({ role: 'assistant', content: result.content });
+    // 持久化历史上限裁剪（与发给 LLM 的窗口解耦）
+    if (session.history.length > MAX_PERSIST_MESSAGES) {
+      session.history = session.history.slice(-MAX_PERSIST_MESSAGES);
+    }
     session.updatedAt = Date.now();
     this.saveDebounced();
 
@@ -267,6 +289,21 @@ class Knowledge {
     s.updatedAt = Date.now();
     this.saveDebounced();
     return true;
+  }
+
+  delete(sessionId) {
+    if (!this.sessions.has(sessionId)) return false;
+    this.sessions.delete(sessionId);
+    this.saveDebounced();
+    return true;
+  }
+
+  /** 会话数量上限裁剪：保留最近更新的 MAX_SESSIONS 个，丢弃最旧的 */
+  _pruneSessions() {
+    if (this.sessions.size <= MAX_SESSIONS) return;
+    const sorted = [...this.sessions.values()].sort((a, b) => a.updatedAt - b.updatedAt);
+    const excess = this.sessions.size - MAX_SESSIONS;
+    for (let i = 0; i < excess; i++) this.sessions.delete(sorted[i].id);
   }
 
   status() {

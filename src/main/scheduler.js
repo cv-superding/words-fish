@@ -37,25 +37,53 @@ function isWorkday(now = new Date()) {
 }
 
 function isFullscreenPlaying(cb) {
-  // 调用 PowerShell 检测系统是否处于“正在投影 / 全屏应用”状态。
-  // 因为完整 OS API 需要 native 模块，这里通过 cmd + tasklist 简化判断：
-  //  检测是否有 PowerPoint / Zoom / Teams / OBS 等常见“全屏应用”正在运行。
-  execFile('tasklist', ['/fi', 'imagename eq Powerpnt.exe /fo csv /nh'], { timeout: 1500 }, (e1, p1) => {
-    if (e1) return cb(false);
-    let playing = p1 && p1.trim() && !/INFO/i.test(p1);
-    if (playing) return cb(true);
-    execFile(
-      'tasklist',
-      ['/fo', 'csv', '/nh'],
-      { timeout: 2000 },
-      (e2, out) => {
-        if (e2 || !out) return cb(false);
-        const low = out.toLowerCase();
-        const hot = ['pptview', 'zoomit', 'obs', 'obs64', 'teams', 'ms-teams', 'wemeetapp', 'webexmta'];
-        cb(hot.some((n) => low.includes(n + '.exe')));
-      }
-    );
-  });
+  // 用「前台窗口是否真正全屏（几乎覆盖整个主屏）」来判定，
+  // 而不是“进程是否在运行”。Teams / WeMeet / WebEx / PowerPoint 等会议/办公软件
+  // 在绝大多数办公电脑上常驻后台，并不代表用户正在全屏演示——
+  // 旧逻辑只要这些进程在跑就判定为全屏，导致定时推送对绝大多数用户静默失效。
+  // 检测失败时（PowerShell 不可用 / 异常）一律按“非全屏”处理，保证推送照常触发。
+  const script = `
+try {
+  Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public class WFFull {
+  [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+  [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
+  [DllImport("user32.dll")] public static extern int GetSystemMetrics(int n);
+  [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left, Top, Right, Bottom; }
+}
+"@
+  $fg = [WFFull]::GetForegroundWindow()
+  if ($fg -eq [IntPtr]::Zero) { Write-Output 'false'; return }
+  $r = New-Object WFFull+RECT
+  if (-not [WFFull]::GetWindowRect($fg, [ref]$r)) { Write-Output 'false'; return }
+  $sw = [WFFull]::GetSystemMetrics(0)
+  $sh = [WFFull]::GetSystemMetrics(1)
+  $fw = $r.Right - $r.Left
+  $fh = $r.Bottom - $r.Top
+  # 窗口几乎覆盖整个主屏（留 4px 容差）才视为全屏；最大化（含任务栏）不算。
+  $full = ($fw -ge ($sw - 4)) -and ($fh -ge ($sh - 4))
+  Write-Output $full.ToString().ToLower()
+} catch {
+  Write-Output 'false'
+}`.trim();
+  let encoded;
+  try {
+    encoded = Buffer.from(script, 'utf16le').toString('base64');
+  } catch (e) {
+    return cb(false);
+  }
+  execFile(
+    'powershell',
+    ['-NoProfile', '-NonInteractive', '-EncodedCommand', encoded],
+    { timeout: 3000 },
+    (e, out) => {
+      if (e) return cb(false);
+      const v = (out || '').trim().toLowerCase();
+      cb(v === 'true');
+    }
+  );
 }
 
 function shouldFire(now = new Date()) {

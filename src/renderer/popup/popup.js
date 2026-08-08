@@ -381,12 +381,18 @@ api.onGesture((p) => {
   }
 });
 api.onConfig(({ section }) => {
-  // 之前 `if (!section) return;` 会让普通 config.update（如切换主题）广播 section=null 时被跳过，
-  // 导致悬浮窗不立即重渲染，要点"下一个单词"才跟上。悬浮窗的所有可见属性都来自 config，
-  // 任何变化都该即时反映——去掉守卫即可，settings 是独立窗口，无输入冲突。
-  // 仍跳过 llm 类的变化（不影响悬浮窗显示，省一次 IPC）。
+  // 任何配置变化都即时重渲染（悬浮窗可见属性都来自 config）。
+  // 但不要用 loadWord（它会重置 state.revealed = !meaningHidden），否则用户手动
+  // 隐藏的释义会被任何配置广播（切主题/字号/间隔等）无声重置，自测模式被打断。
+  // 这里只更新 payload / gestures 后直接 render，render 内部依据 state.revealed
+  // 决定释义显隐，从而保留用户当前的显隐状态。
   if (section === 'llm') return;
-  api.current().then((p) => { if (p) loadWord(p); });
+  api.current().then((p) => {
+    if (!p) return;
+    state.payload = p;
+    state.gestures = p.gestures || {};
+    render(p);
+  });
 });
 
 window.addEventListener('resize', scheduleResize);

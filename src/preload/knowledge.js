@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('wfKnowledge', {
   ask: (sessionId, type, input) => invoke('knowledge:ask', sessionId, type, input),
   history: (sessionId) => invoke('knowledge:history', sessionId),
   reset: (sessionId) => invoke('knowledge:reset', sessionId),
+  delete: (sessionId) => invoke('knowledge:delete', sessionId),
   status: () => invoke('knowledge:status'),
   testConnection: () => invoke('knowledge:test'),
 

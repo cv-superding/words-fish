@@ -35,9 +35,9 @@ function register() {
   ipcMain.handle('config:get', () => config.all);
   ipcMain.handle('config:getSection', (_, section) => config.get(section));
   ipcMain.handle('config:update', (_, patch, meta) => {
-    const before = JSON.parse(JSON.stringify(config.all));
+    // 只负责写配置；配置变更广播统一由 config.onChange 监听器触发（下方 :221 处），
+    // 避免和监听器重复调用 onConfigChanged 造成双重广播 / 双重重渲染。
     config.update(patch, meta);
-    onConfigChanged(before, config.all, meta);
     return config.all;
   });
   ipcMain.handle('config:reset', (_, section) => {
@@ -121,6 +121,7 @@ function register() {
   });
   ipcMain.handle('knowledge:history', (_, sessionId) => knowledge.history(sessionId));
   ipcMain.handle('knowledge:reset', (_, sessionId) => knowledge.reset(sessionId));
+  ipcMain.handle('knowledge:delete', (_, sessionId) => knowledge.delete(sessionId));
   ipcMain.handle('knowledge:status', () => knowledge.status());
   ipcMain.handle('knowledge:test', () => knowledge.testConnection());
 
@@ -206,8 +207,10 @@ function register() {
 
   /* --------------------------- 自启动 --------------------------- */
   ipcMain.handle('app:setAutoLaunch', (_, enabled) => {
-    autolaunch.refreshAutostart();
-    return enabled;
+    // 真正写入配置，再由 config.onChange → onConfigChanged 的统一分支去 refreshAutostart，
+    // 避免旧逻辑「不读参、在配置写入前就 refresh」的时序错误。
+    config.update({ general: { autoLaunch: !!enabled } });
+    return autolaunch.isEnabled();
   });
   ipcMain.handle('app:getAutoLaunch', () => autolaunch.isEnabled());
   ipcMain.handle('app:openDataDir', () => {
