@@ -101,8 +101,8 @@ html, body {
 }
 .t-left { display: flex; align-items: center; gap: 10px; font-weight: 600; }
 .t-left .logo {
-  width: 32px; height: 32px;
-  border-radius: 6px;
+  width: 20px; height: 20px;
+  border-radius: 4px;
   object-fit: contain;
   display: block;
 }
