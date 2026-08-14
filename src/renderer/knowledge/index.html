@@ -15,8 +15,12 @@
       </div>
       <div class="t-right">
         <span class="status" id="status-line">就绪</span>
-        <button id="btn-minimize" title="最小化">—</button>
-        <button id="btn-close" title="关闭">×</button>
+        <button id="btn-minimize" title="最小化" aria-label="最小化">
+          <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><line x1="2.5" y1="6" x2="9.5" y2="6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        </button>
+        <button id="btn-close" title="关闭" aria-label="关闭">
+          <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><line x1="3.2" y1="3.2" x2="8.8" y2="8.8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><line x1="8.8" y1="3.2" x2="3.2" y2="8.8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        </button>
       </div>
     </header>
 

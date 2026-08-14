@@ -110,8 +110,11 @@ html, body {
 .t-right button {
   width: 28px; height: 28px; background: transparent; border: 0; border-radius: 6px;
   cursor: pointer; color: var(--text-soft); font-size: 14px;
+  display: flex; align-items: center; justify-content: center; line-height: 1; padding: 0;
 }
+.t-right button svg { display: block; }
 .t-right button:hover { background: var(--surface-2); color: var(--text); }
+.t-right #btn-close:hover { background: #e81123; color: #fff; }
 .t-right .status { font-size: 12px; color: var(--text-mute); margin-right: 8px; }
 
 /* 侧栏 */
