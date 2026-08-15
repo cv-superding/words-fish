@@ -1,15 +1,15 @@
 'use strict';
 /**
  * 离线截图脚本（仅供 README 截图更新用）：
- *   用 dev electron 跑本脚本，按 --capture=popup|bubble|settings 创建对应窗口、
+ *   用 dev electron 跑本脚本，按 --capture=popup|settings 创建对应窗口、
  *   注入 mock 数据、调 webContents.capturePage() 输出 PNG 后退出。
+ *   （托盘气泡 2026-08-15 已从 README 移除，故脚本不再支持 bubble 目标）
  *
  * 不打包、不进 asar、不污染生产代码。生产代码（src/main/main.js、windows.js）完全不动。
  *
  * 用法：
- *   node_modules\.bin\electron scripts/capture.js --capture=popup   --out=assets/screenshots/popup.png
- *   node_modules\.bin\electron scripts/capture.js --capture=bubble  --out=assets/screenshots/bubble.png
- *   node_modules\.bin\electron scripts/capture.js --capture=settings --out=assets/screenshots/settings.png
+ *   ./node_modules/.bin/electron scripts/capture.js --capture=popup   --out=assets/screenshots/popup.png
+ *   ./node_modules/.bin/electron scripts/capture.js --capture=settings --out=assets/screenshots/settings.png
  *
  * 必须在项目根目录执行（D:\360Downloads\Software\words-fish）。
  *
@@ -50,16 +50,16 @@ function getArg(prefix) {
   return a ? a.slice(prefix.length) : null;
 }
 
-const target = getArg('--capture='); // 'popup' | 'bubble' | 'settings'
+const target = getArg('--capture='); // 'popup' | 'settings'  (bubble 已被用户从 README 移除)
 const outPath = path.resolve(getArg('--out=') || path.join(ROOT, 'assets', 'screenshots', `${target || 'capture'}.png`));
 
-if (!['popup', 'bubble', 'settings'].includes(target)) {
-  console.error('Usage: electron scripts/capture.js --capture=<popup|bubble|settings> --out=<png path>');
+if (!['popup', 'settings'].includes(target)) {
+  console.error('Usage: electron scripts/capture.js --capture=<popup|settings> --out=<png path>');
   process.exit(1);
 }
 
 /* =========================== Mock 数据 =========================== */
-// 一个看起来像样的单词 payload（popup / bubble 共用，按需裁剪）
+// popup 截图中注入的单词 payload
 function mockWord() {
   return {
     w: 'serendipity',
@@ -142,30 +142,6 @@ function createWindow(channel) {
       },
     });
   }
-  if (target === 'bubble') {
-    return new BrowserWindow({
-      width: 372,
-      height: 200,
-      show: false,
-      frame: false,
-      transparent: true,
-      resizable: false,
-      movable: false,
-      skipTaskbar: true,
-      alwaysOnTop: false,
-      focusable: false,
-      hasShadow: false,
-      backgroundColor: '#00000000',
-      fullscreenable: false,
-      webPreferences: {
-        preload: path.join(__dirname, '__capture_preload_bubble.js'),
-        contextIsolation: true,
-        nodeIntegration: false,
-        sandbox: false,
-        backgroundThrottling: false,
-      },
-    });
-  }
   // settings
   return new BrowserWindow({
     width: 960,
@@ -187,14 +163,13 @@ async function run() {
   // 先把 stub preload 写盘（Electron preload 只接受文件路径，不接受代码字符串）
   fs.mkdirSync(path.join(__dirname, '_tmp'), { recursive: true });
   const stubPopup = path.join(__dirname, '_tmp', `__capture_preload_${target}.js`);
-  const channel = target === 'popup' ? 'wfPopup' : target === 'bubble' ? 'wfBubble' : 'wfSettings';
+  const channel = target === 'popup' ? 'wfPopup' : 'wfSettings';
   fs.writeFileSync(stubPopup, makeStubPreload(channel), 'utf8');
 
   const win = createWindow(channel);
 
   const html =
     target === 'popup'   ? path.join(RENDERER, 'popup', 'index.html') :
-    target === 'bubble'  ? path.join(RENDERER, 'bubble', 'index.html') :
                            path.join(RENDERER, 'settings', 'index.html');
 
   await win.loadFile(html);
@@ -202,8 +177,8 @@ async function run() {
   // 等渲染稳定（DOM 渲染、字体加载、CSS 应用）
   await new Promise((r) => setTimeout(r, 600));
 
-  // 注入数据再渲染（仅 popup / bubble 需要；settings 表单自成体系）
-  if (target === 'popup' || target === 'bubble') {
+  // 注入数据再渲染（仅 popup 需要；settings 表单自成体系）
+  if (target === 'popup') {
     // 直接在 renderer 里调用 render() —— popup.js / bubble.js 的 render() 是全局函数
     const payloadJson = JSON.stringify(MOCK_PAYLOAD);
     await win.webContents.executeJavaScript(`

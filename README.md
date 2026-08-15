@@ -51,9 +51,9 @@
 
 ## 🖼 效果预览
 
-| 悬浮窗 | 托盘气泡 | 设置界面 |
-| --- | --- | --- |
-| ![悬浮窗：单词释义卡片](assets/screenshots/popup.png) | ![托盘气泡：右下角小卡片](assets/screenshots/bubble.png) | ![设置界面：左侧导航 + 右侧表单](assets/screenshots/settings.png) |
+| 悬浮窗 | 设置界面 |
+| --- | --- |
+| ![悬浮窗：单词释义卡片](assets/screenshots/popup.png) | ![设置界面：左侧导航 + 右侧表单](assets/screenshots/settings.png) |
 
 主要交互：
 
