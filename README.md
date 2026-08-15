@@ -51,11 +51,9 @@
 
 ## 🖼 效果预览
 
-> 截图将在 `assets/screenshots/` 中提供（首次发版后由维护者补上）。下面先放占位图：
-
 | 悬浮窗 | 托盘气泡 | 设置界面 |
 | --- | --- | --- |
-| ![popup](assets/screenshots/popup.png) | ![bubble](assets/screenshots/bubble.png) | ![settings](assets/screenshots/settings.png) |
+| ![悬浮窗：单词释义卡片](assets/screenshots/popup.png) | ![托盘气泡：右下角小卡片](assets/screenshots/bubble.png) | ![设置界面：左侧导航 + 右侧表单](assets/screenshots/settings.png) |
 
 主要交互：
 
