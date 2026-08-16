@@ -278,8 +278,9 @@ html, body {
 [data-host="popup"] {
   --radius: 8px;
 }
-[data-host="popup"] html,
-[data-host="popup"] body {
+/* data-host 在 body 上（knowledge.js 的 detectHost 写入），html/body 不可能是
+ * [data-host] 的后代，旧写法 `[data-host="popup"] html/body` 永不匹配，直接锚定 body */
+body[data-host="popup"] {
   font-size: 13px;
   background: var(--bg);
 }

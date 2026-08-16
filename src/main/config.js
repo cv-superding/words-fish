@@ -34,6 +34,7 @@ const DEFAULTS = {
     nextWord: 'Shift+C',
     markUnknown: 'Shift+Z',
     toggleMeaning: '',
+    openKnowledge: 'Shift+K',
     openSettings: '',
     panic: 'Shift+Esc',
   },
@@ -144,7 +145,8 @@ class Config {
       if (cur == null) return fallback;
       cur = cur[s];
     }
-    return cur === undefined ? fallback : cur;
+    // 显式 null 与 undefined 一样视为未设置，回退默认值
+    return cur == null ? fallback : cur;
   }
 
   /** 局部更新（深合并），返回新配置 */

@@ -58,6 +58,11 @@ if (!['popup', 'settings'].includes(target)) {
   process.exit(1);
 }
 
+// stub preload 的唯一路径：写盘与窗口 webPreferences.preload 必须指向同一文件。
+// 旧代码 webPreferences 指向 scripts/__capture_preload_*.js（不存在的路径），
+// stub 根本没被加载。统一走 scripts/_tmp/ 下的同一文件。
+const STUB_PRELOAD = path.join(__dirname, '_tmp', `__capture_preload_${target}.js`);
+
 /* =========================== Mock 数据 =========================== */
 // popup 截图中注入的单词 payload
 function mockWord() {
@@ -134,7 +139,7 @@ function createWindow(channel) {
       backgroundColor: '#00000000',
       fullscreenable: false,
       webPreferences: {
-        preload: path.join(__dirname, '__capture_preload_popup.js'), // 写盘再做
+        preload: STUB_PRELOAD,
         contextIsolation: true,
         nodeIntegration: false,
         sandbox: false,
@@ -150,7 +155,7 @@ function createWindow(channel) {
     frame: false,
     backgroundColor: '#f6f7f9',
     webPreferences: {
-      preload: path.join(__dirname, '__capture_preload_settings.js'),
+      preload: STUB_PRELOAD,
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
@@ -162,9 +167,8 @@ function createWindow(channel) {
 async function run() {
   // 先把 stub preload 写盘（Electron preload 只接受文件路径，不接受代码字符串）
   fs.mkdirSync(path.join(__dirname, '_tmp'), { recursive: true });
-  const stubPopup = path.join(__dirname, '_tmp', `__capture_preload_${target}.js`);
   const channel = target === 'popup' ? 'wfPopup' : 'wfSettings';
-  fs.writeFileSync(stubPopup, makeStubPreload(channel), 'utf8');
+  fs.writeFileSync(STUB_PRELOAD, makeStubPreload(channel), 'utf8');
 
   const win = createWindow(channel);
 
@@ -216,7 +220,7 @@ async function run() {
   console.log(`[capture] wrote ${outPath} (${stat.size} bytes, ${image.getSize().width}x${image.getSize().height})`);
 
   // 清理 stub
-  try { fs.unlinkSync(stubPopup); } catch (e) {}
+  try { fs.unlinkSync(STUB_PRELOAD); } catch (e) {}
 
   win.destroy();
   app.quit();

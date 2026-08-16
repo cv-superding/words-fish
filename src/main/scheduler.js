@@ -74,8 +74,13 @@ public class WFFull {
   } catch (e) {
     return cb(false);
   }
+  // 用绝对路径，避免依赖 PATH 环境变量（精简版系统可能未配置）
+  const psExe = process.platform === 'win32'
+    ? require('path').join(process.env.SystemRoot || process.env.windir || 'C:\\Windows',
+        'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe')
+    : 'powershell';
   execFile(
-    'powershell',
+    psExe,
     ['-NoProfile', '-NonInteractive', '-EncodedCommand', encoded],
     { timeout: 3000 },
     (e, out) => {
@@ -89,7 +94,7 @@ public class WFFull {
 function shouldFire(now = new Date()) {
   if (!config.get('push.enabled', true)) return { ok: false, reason: '已关闭' };
   if (paused) return { ok: false, reason: '用户暂停' };
-  if (suppressed > 0) return { ok: false, reason: '临时抑制' };
+  if (suppressed > Date.now()) return { ok: false, reason: '临时抑制' };
   if (config.get('push.workdayOnly') && !isWorkday(now)) return { ok: false, reason: '非工作日' };
   if (inQuietHours(now)) return { ok: false, reason: '免打扰时段' };
   return { ok: true };
@@ -140,7 +145,8 @@ function pauseToggle() {
 }
 
 function suppress(ms = 0) {
-  suppressed = Date.now() + ms;
+  // ms<=0 视为清除抑制，避免 suppressed=Date.now() 恒为正数导致永久静默
+  suppressed = ms > 0 ? Date.now() + ms : 0;
 }
 
 function unsuppress() {

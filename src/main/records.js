@@ -88,6 +88,7 @@ class Records {
     clearTimeout(this._t1);
     clearTimeout(this._t2);
     try {
+      paths.ensureDir(paths.userData);
       fs.writeFileSync(paths.recordsFile, JSON.stringify({ v: 1, records: this.map }), 'utf8');
       fs.writeFileSync(paths.statsFile, JSON.stringify(this.stats), 'utf8');
     } catch (e) {
@@ -262,9 +263,14 @@ class Records {
     }
 
     const pool = [];
-    // 生词优先
-    if (opts.priorityMarked !== false && marked.length) pool.push({ list: marked, weight: 0.35, source: 'marked' });
-    if (opts.reviewEnabled !== false && due.length) pool.push({ list: due, weight: (1 - newRatio) * (marked.length ? 0.65 : 1), source: 'due' });
+    // 生词优先；关闭优先时把生词并入复习池参与正常调度，避免生词被彻底排除出轮换
+    const markedFirst = opts.priorityMarked !== false;
+    if (markedFirst && marked.length) pool.push({ list: marked, weight: 0.35, source: 'marked' });
+    const dueList = markedFirst ? due : due.concat(marked);
+    if (opts.reviewEnabled !== false && dueList.length) {
+      const dueWeight = markedFirst && marked.length ? 0.65 : 1;
+      pool.push({ list: dueList, weight: (1 - newRatio) * dueWeight, source: 'due' });
+    }
     if (fresh.length) pool.push({ list: fresh, weight: newRatio, source: 'new' });
 
     if (!pool.length) {

@@ -15,8 +15,14 @@ const esc = (s) => String(s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 
 const SOURCE_LABEL = { new: '新词', due: '复习', marked: '生词复习', random: '随见' };
 
+// 手势状态：meaningHidden 由 toggleMeaning 手势切换（默认显示释义）；
+// currentPayload 保存最近一次渲染的 payload，供 speak 手势朗读当前单词
+let meaningHidden = false;
+let currentPayload = null;
+
 function render(payload) {
   if (!payload) return;
+  currentPayload = payload;
   const v = payload.view;
   document.body.dataset.theme = v.theme || 'light';
   const w = payload.word;
@@ -32,6 +38,8 @@ function render(payload) {
     .map((t) => `<div><span class="pos">${esc(t.p || '')}</span>${esc(t.c)}</div>`)
     .join('');
   refs.meanings.innerHTML = meanings || '<div style="color:var(--mute)">无释义</div>';
+  // 换词重渲染时保持手势设置的释义显隐状态
+  refs.meanings.classList.toggle('meaning-hidden', meaningHidden);
 
   refs.root.classList.remove('fading');
   refs.root.style.opacity = '1'; // 收到真实单词后再显示，避免占位(abandon)闪烁
@@ -61,6 +69,31 @@ document.getElementById('btn-close').addEventListener('click', () => api.close()
 
 api.onWord((p) => render(p));
 api.onFadeOut(() => refs.root.classList.add('fading'));
+
+// 主进程 dispatchAction 会把 toggleMeaning / speak 手势广播到 bubble
+// （channel 'gesture:fire'，payload 形如 { gesture: 'toggleMeaning' }），
+// 处理方式与 popup.js 的 onGesture 保持一致。
+api.onGesture((p) => {
+  if (!p) return;
+  if (p.gesture === 'toggleMeaning') {
+    meaningHidden = !meaningHidden;
+    refs.meanings.classList.toggle('meaning-hidden', meaningHidden);
+  } else if (p.gesture === 'speak' && currentPayload) {
+    speakWord(currentPayload.word.w);
+  }
+});
+
+// bubble 的 preload 没暴露 speak，直接用 speechSynthesis
+// （参数与 preload/popup.js 里的 speak 实现一致）
+function speakWord(text) {
+  try {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US';
+    u.rate = 0.9;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+  } catch (e) {}
+}
 
 window.addEventListener('resize', () => {
   const h = refs.root.getBoundingClientRect().height;

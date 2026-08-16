@@ -2,7 +2,7 @@
 /**
  * IPC 处理：所有从渲染层发起的调用都通过这里，统一登记。
  */
-const { ipcMain, shell, app } = require('electron');
+const { ipcMain, shell, app, BrowserWindow } = require('electron');
 const path = require('path');
 const { pathToFileURL } = require('url');
 const dialog = require('./ipc-dialog');
@@ -58,7 +58,7 @@ function register() {
     return true;
   });
   ipcMain.handle('dict:import', async (e) => {
-    const win = e.sender.getOwnerBrowserWindow();
+    const win = senderWin(e);
     const r = await dialog.openImport(win);
     if (!r || r.canceled) return { canceled: true };
     const out = dict.importFromFile(r.filePath);
@@ -172,18 +172,28 @@ function register() {
   ipcMain.handle('win:hideAll', () => wins.hideAll());
   ipcMain.handle('win:openSettings', (_, section) => wins.openSettings(section));
   ipcMain.handle('win:openKnowledge', (_, domain) => wins.openKnowledge(domain));
+  // 这些窗口都没有 parent，getOwnerBrowserWindow() 会返回 null；
+  // 统一用 fromWebContents 定位发送方所在的窗口。
+  const senderWin = (e) => {
+    const w = BrowserWindow.fromWebContents(e.sender);
+    return w && !w.isDestroyed() ? w : null;
+  };
   ipcMain.handle('win:close', (e) => {
-    const w = e.sender.getOwnerBrowserWindow();
+    const w = senderWin(e);
     if (w) w.close();
   });
   ipcMain.handle('win:minimize', (e) => {
-    const w = e.sender.getOwnerBrowserWindow();
+    const w = senderWin(e);
     if (w) w.minimize();
   });
   ipcMain.handle('win:alwaysOnTop', (e, flag) => {
-    const w = e.sender.getOwnerBrowserWindow();
+    const w = senderWin(e);
     if (w) w.setAlwaysOnTop(!!flag, !!flag ? 'screen-saver' : 'normal');
     return true;
+  });
+  ipcMain.handle('win:hide', (e) => {
+    const w = senderWin(e);
+    if (w) w.hide();
   });
   ipcMain.handle('win:positionPopup', () => {
     const p = wins.getWin('popup');
@@ -199,8 +209,8 @@ function register() {
   ipcMain.handle('gesture:fire', (e, gesture) => {
     const action = config.get(`gestures.${gesture}`);
     if (!action || action === 'none') return { handled: false };
-    const win = e.sender.getOwnerBrowserWindow();
-    const isFromPopup = win === wins.getWin('popup');
+    const win = BrowserWindow.fromWebContents(e.sender);
+    const isFromPopup = !!win && win === wins.getWin('popup');
     dispatchAction(action, { source: isFromPopup ? 'popup' : 'bubble' });
     return { handled: true, action };
   });
@@ -234,14 +244,18 @@ function dispatchAction(action, ctx) {
       break;
     case 'nextWord': {
       const p = wordflow.next();
-      wins.send('popup', 'word:update', p);
-      wins.send('bubble', 'word:update', p);
+      if (p) {
+        wins.send('popup', 'word:update', p);
+        wins.send('bubble', 'word:update', p);
+      }
       break;
     }
     case 'prevWord': {
       const p = wordflow.prev();
-      wins.send('popup', 'word:update', p);
-      wins.send('bubble', 'word:update', p);
+      if (p) {
+        wins.send('popup', 'word:update', p);
+        wins.send('bubble', 'word:update', p);
+      }
       break;
     }
     case 'toggleMeaning':
@@ -291,7 +305,7 @@ function onConfigChanged(before, now, meta) {
   if (meta && meta.silentReload) return;
   // 热键
   const hk = JSON.stringify(before.hotkeys) !== JSON.stringify(now.hotkeys);
-  if (hk) hotkeys.applyAll();
+  if (hk || meta.reset === 'all') hotkeys.applyAll();
   // 推送间隔
   scheduler.reconfigure();
   // 自启

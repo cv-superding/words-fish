@@ -58,6 +58,7 @@ html, body {
 .phonetic .label { color: var(--mute); font-size: 10px; margin-right: 3px; }
 .phonetic .sep { opacity: 0.5; margin: 0 6px; }
 .meanings { display: flex; flex-direction: column; gap: 2px; font-size: 13px; line-height: 1.45; }
+.meanings.meaning-hidden { display: none; }
 .meanings .pos { color: var(--mute); font-style: italic; margin-right: 5px; font-size: 11px; }
 .footer { display: flex; gap: 6px; margin-top: 6px; }
 .btn {

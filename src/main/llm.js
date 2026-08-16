@@ -9,7 +9,15 @@ const { request } = require('./http');
 /** 读取当前 LLM 配置（归一化） */
 function getCfg() {
   const l = config.get('llm', {}) || {};
-  const baseUrl = (l.baseUrl || 'https://api.openai.com/v1').trim().replace(/\/+$/, '');
+  let baseUrl = (l.baseUrl || 'https://api.openai.com/v1').trim().replace(/\/+$/, '');
+  // 兼容只填了 origin（如 https://api.openai.com）的写法：路径为空时自动补 /v1；
+  // 已带自定义路径（如 /openai、/v2）的保持原样。
+  try {
+    const u = new URL(baseUrl);
+    if (u.pathname === '' || u.pathname === '/') baseUrl += '/v1';
+  } catch (e) {
+    /* 非法 URL 交给后续请求报错 */
+  }
   return {
     enabled: !!l.enabled,
     baseUrl,
@@ -55,7 +63,8 @@ async function chatCompletions(opts) {
   if (opts.stream) payload.stream_options = { include_usage: true };
 
   const deltas = []; // 用于在非流式或尾部取 usage
-  let sseBuf = '';
+  // 按字节缓冲，整行解码：避免多字节中文跨 chunk 被拆成乱码（U+FFFD）
+  let sseBuf = Buffer.alloc(0);
   let streamed = '';
 
   const resp = await request({
@@ -68,10 +77,10 @@ async function chatCompletions(opts) {
     signal: opts.signal,
     onData: opts.onToken
       ? (chunkBuf) => {
-          sseBuf += chunkBuf.toString('utf8');
+          sseBuf = Buffer.concat([sseBuf, chunkBuf]);
           let idx;
-          while ((idx = sseBuf.indexOf('\n')) >= 0) {
-            const line = sseBuf.slice(0, idx).trim();
+          while ((idx = sseBuf.indexOf(0x0a)) >= 0) {
+            const line = sseBuf.slice(0, idx).toString('utf8').trim();
             sseBuf = sseBuf.slice(idx + 1);
             if (!line.startsWith('data:')) continue;
             const data = line.slice(5).trim();

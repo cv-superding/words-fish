@@ -248,38 +248,45 @@ class Knowledge {
   async ask(sessionId, type, input, hooks = {}) {
     const session = this.sessions.get(sessionId);
     if (!session) throw new Error('知识会话不存在，请重新打开领域');
-    const { messages, userContent } = this.buildMessages(session, type, input);
-
-    let result;
+    // 同一会话同时只允许一个进行中的请求：并发会让两条流的 token 与历史写入互相交错
+    if (session._busy) throw new Error('上一个请求还在进行中，请等它完成后再提问');
+    session._busy = true;
     try {
-      result = await llm.chatCompletions({
-        messages,
-        stream: true,
-        onToken: hooks.onToken,
-        signal: hooks.signal,
-      });
-    } catch (e) {
-      // LLM 失败：不要把用户提问写入持久化历史，否则下次打开会话会看到一条“无回复”的提问。
-      // 渲染端（knowledge 页 send()）已对异常做了兜底展示，这里直接上抛即可。
-      throw e;
-    }
+      const { messages, userContent } = this.buildMessages(session, type, input);
 
-    // 仅当 LLM 成功返回时才落盘历史，保证 (user, assistant) 成对、不留悬空消息。
-    session.history.push({ role: 'user', content: userContent });
-    session.history.push({ role: 'assistant', content: result.content });
-    // 持久化历史上限裁剪（与发给 LLM 的窗口解耦）
-    if (session.history.length > MAX_PERSIST_MESSAGES) {
-      session.history = session.history.slice(-MAX_PERSIST_MESSAGES);
-    }
-    session.updatedAt = Date.now();
-    this.saveDebounced();
-
-    if (hooks.onDone) {
+      let result;
       try {
-        hooks.onDone();
-      } catch (e) {}
+        result = await llm.chatCompletions({
+          messages,
+          stream: true,
+          onToken: hooks.onToken,
+          signal: hooks.signal,
+        });
+      } catch (e) {
+        // LLM 失败：不要把用户提问写入持久化历史，否则下次打开会话会看到一条“无回复”的提问。
+        // 渲染端（knowledge 页 send()）已对异常做了兜底展示，这里直接上抛即可。
+        throw e;
+      }
+
+      // 仅当 LLM 成功返回时才落盘历史，保证 (user, assistant) 成对、不留悬空消息。
+      session.history.push({ role: 'user', content: userContent });
+      session.history.push({ role: 'assistant', content: result.content });
+      // 持久化历史上限裁剪（与发给 LLM 的窗口解耦）
+      if (session.history.length > MAX_PERSIST_MESSAGES) {
+        session.history = session.history.slice(-MAX_PERSIST_MESSAGES);
+      }
+      session.updatedAt = Date.now();
+      this.saveDebounced();
+
+      if (hooks.onDone) {
+        try {
+          hooks.onDone();
+        } catch (e) {}
+      }
+      return { content: result.content, model: result.model, usage: result.usage };
+    } finally {
+      session._busy = false;
     }
-    return { content: result.content, model: result.model, usage: result.usage };
   }
 
   reset(sessionId) {

@@ -13,11 +13,12 @@ const scheduler = require('./scheduler');
 const handlers = {
   togglePopup: () => wins.togglePopup(),
   nextWord: () => {
+    const p = wordflow.next();
     if (wins.isPopupVisible()) {
-      wins.send('popup', 'word:update', wordflow.next());
+      if (p) wins.send('popup', 'word:update', p);
     } else {
       wins.showPopup();
-      wins.send('popup', 'word:update', wordflow.next());
+      if (p) wins.send('popup', 'word:update', p);
     }
   },
   markUnknown: () => {

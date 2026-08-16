@@ -29,6 +29,17 @@ function eq(a, b, msg) {
 const FULL = '股票是一种**证券**，代表对公司的一部分所有权。\n\n- 可交易\n- 有风险';
 const TOKENS = ['股票是', '一种**证券**', '，代表对公司的一部分', '所有权。\n\n- 可交易\n- 有风险'];
 
+// 本测试直接改 config 单例的 llm 段：先快照，结束后（含异常路径）还原，
+// 避免测试把真实用户配置的 LLM 留在「已启用 / 空 key」等中间状态
+const LLM_SNAPSHOT = JSON.parse(JSON.stringify(config.get('llm') || {}));
+function restoreLlm() {
+  try {
+    config.update({ llm: LLM_SNAPSHOT });
+    // 马上要 process.exit，等不到 300ms 防抖落盘，这里立即写回
+    config.saveNow();
+  } catch (e) { /* 还原失败不掩盖测试结果 */ }
+}
+
 function startMock() {
   return new Promise((resolve) => {
     const server = http.createServer((req, res) => {
@@ -156,10 +167,16 @@ async function main() {
   console.log(`\n=== 总结 ===\n通过 ${pass} / 失败 ${fail}`);
   if (fails.length) console.log('失败项: ' + fails.join(' | '));
   server.close();
-  process.exit(fail > 0 ? 1 : 0);
+  return fail > 0 ? 1 : 0;
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+main()
+  .then((code) => {
+    restoreLlm();
+    process.exit(code);
+  })
+  .catch((e) => {
+    console.error(e);
+    restoreLlm();
+    process.exit(1);
+  });

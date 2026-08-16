@@ -57,19 +57,21 @@ function pushSystem(payload, trigger) {
   const phonetic = [w.us ? `美[${w.us}]` : '', w.uk ? `英[${w.uk}]` : ''].filter(Boolean).join(' ');
 
   const iconPath = path.join(__dirname, '..', '..', 'assets', 'icon.png');
+  let icon = nativeImage.createFromPath(iconPath);
+  if (icon.isEmpty() && process.resourcesPath) {
+    // 兜底：打包后 asar 内路径读取失败时尝试 resources 目录
+    icon = nativeImage.createFromPath(path.join(process.resourcesPath, 'assets', 'icon.png'));
+  }
   const n = new Notification({
     title: `${w.w}  ${phonetic}`.trim(),
     body: meaning + (w.e ? `\n例：${w.e}` : ''),
     silent: config.get('push.silent', true),
-    icon: nativeImage.createFromPath(iconPath),
+    icon: icon.isEmpty() ? undefined : icon,
     timeoutType: 'default',
   });
   n.on('click', () => {
     wins.showPopup();
     wins.send('popup', 'word:update', payload);
-  });
-  n.on('action', (idx) => {
-    wins.send('settings', 'notify:response', { word: w.w, idx });
   });
   n.show();
 }

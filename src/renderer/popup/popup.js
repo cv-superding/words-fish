@@ -101,7 +101,7 @@ function render(payload) {
 
   const w = payload.word;
   const wordBlock = `<div class="word-block"><span class="word">${escapeHtml(w.w)}</span><button class="speak" id="speak-btn">🔊 朗读</button></div>`;
-  const tags = buildTags(payload.rec, payload.source);
+  const tags = buildTags(payload.rec || {}, payload.source);
   const phonetic = buildPhonetic(w, v);
 
   if (!state.revealed) {
@@ -231,7 +231,7 @@ function handleClick(e) {
   if (state.clickPending) {
     clearTimeout(state.clickPending);
     state.clickPending = null;
-    fireGesture(state.gestures.dblclick || 'dblclick');
+    fireGesture('dblclick');
     return;
   }
   state.clickPending = setTimeout(() => {
@@ -243,7 +243,7 @@ function handleClick(e) {
       if (state.payload) render(state.payload);
       return;
     }
-    fireGesture(state.gestures.click || 'click');
+    fireGesture('click');
   }, 280);
 }
 
@@ -310,6 +310,14 @@ refs.meaningPanel.addEventListener('contextmenu', handleContext);
 refs.meaningPanel.addEventListener('mousedown', handleDown);
 refs.meaningPanel.addEventListener('mouseup', handleUp);
 refs.meaningPanel.addEventListener('mouseleave', () => clearTimeout(state.longPressTimer));
+// 中键手势：auxclick 才能可靠拿到 button===1（click 只发左键）；
+// mousedown 时 preventDefault，阻止默认中键行为（自动滚动等）
+refs.meaningPanel.addEventListener('auxclick', (e) => {
+  if (e.button === 1) handleMiddle(e);
+});
+refs.meaningPanel.addEventListener('mousedown', (e) => {
+  if (e.button === 1) e.preventDefault();
+});
 
 // 右下角 grip 拖拽缩放（同时窗口四边也可由系统原生边框拖拽）
 if (refs.resizeGrip) {
@@ -397,10 +405,19 @@ api.onConfig(({ section }) => {
 
 window.addEventListener('resize', scheduleResize);
 
-// 滚轮兜底：config 里有 wheelUp/wheelDown 映射到 prevWord/nextWord，
-// 但渲染层没有任何触发器。为防潜在的父级/Electron 级监听误触发切词，
-// 显式 stopPropagation（不 preventDefault，内容区自身的滚动不受影响）。
-window.addEventListener('wheel', (e) => { e.stopPropagation(); }, { passive: true });
+// 滚轮手势：config 里 wheelUp/wheelDown 可映射到 prevWord/nextWord，
+// 按 deltaY 方向触发（fireGesture 内部查映射，未映射/none 等于无操作）。
+// 仍显式 stopPropagation（不 preventDefault，内容区自身的滚动不受影响），
+// 400ms 节流防止一次滚动连发多次切词。
+let lastWheelGestureAt = 0;
+window.addEventListener('wheel', (e) => {
+  e.stopPropagation();
+  if (!e.deltaY) return;
+  const now = Date.now();
+  if (now - lastWheelGestureAt < 400) return;
+  lastWheelGestureAt = now;
+  fireGesture(e.deltaY < 0 ? 'wheelUp' : 'wheelDown');
+}, { passive: true });
 
 (async () => {
   const p = await api.current();

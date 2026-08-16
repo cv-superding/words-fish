@@ -126,6 +126,8 @@ async function renderSessions() {
     state.sessions = await api.listSessions();
   } catch (e) {}
   const host = $('session-list');
+  // popup 模式下 applyPopupLayout() 已连侧栏一起删掉 #session-list，此时直接跳过
+  if (!host) return;
   if (!state.sessions.length) {
     host.innerHTML = '<div class="muted small">还没有会话，选一个领域开始吧。</div>';
     return;
@@ -553,5 +555,5 @@ function parseLines(seg) {
 
 init().catch((e) => {
   console.error(e);
-  document.body.innerHTML = `<pre style="padding:20px;color:#d85a30">初始化失败：${e.message}\n${e.stack}</pre>`;
+  document.body.innerHTML = `<pre style="padding:20px;color:#d85a30">初始化失败：${esc(e.message)}\n${esc(e.stack)}</pre>`;
 });

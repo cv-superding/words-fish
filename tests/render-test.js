@@ -139,6 +139,10 @@ function makePopupApi(h) {
     resize: (w, hh) => h['win:resizePopup'](null, w, hh),
     fireGesture: (g) => Promise.resolve(h['gesture:fire'](null, g)),
     savePosition: () => Promise.resolve(true),
+    getPopup: () => Promise.resolve({ view: 'word', size: { width: 380, height: 240 } }),
+    configUpdate: () => Promise.resolve(true),
+    setView: () => Promise.resolve(true),
+    requestAssets: () => Promise.resolve(true),
     close: () => Promise.resolve(true),
     alwaysOnTop: () => Promise.resolve(true),
     speak: () => {},
@@ -146,6 +150,7 @@ function makePopupApi(h) {
     onGesture: () => () => {},
     onConfig: () => () => {},
     onStats: () => () => {},
+    onAssets: () => () => {},
   };
 }
 function makeBubbleApi(h) {
@@ -209,6 +214,11 @@ function makeSettingsApi(h) {
       setAutoLaunch: () => Promise.resolve(true),
       platform: 'win32',
     },
+    knowledge: {
+      test: () => Promise.resolve({ ok: true, model: 'mock-model', latencyMs: 1 }),
+      status: () => Promise.resolve({ configured: false, model: '' }),
+      presets: () => Promise.resolve([]),
+    },
     onConfigChanged: () => () => {},
     onStats: () => () => {},
     onGoto: () => () => {},
@@ -252,4 +262,7 @@ function makeSettingsApi(h) {
   }
   console.log('\n=== 总结 ===');
   console.log(JSON.stringify(results, null, 2));
+  // 有任何窗口失败（error）→ 退出码 1，全过 → 0（CI 可据此判红）
+  const failed = Object.values(results).some((r) => r && r.error);
+  process.exit(failed ? 1 : 0);
 })();

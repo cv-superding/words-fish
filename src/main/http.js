@@ -68,6 +68,7 @@ function request(opts) {
     const baseOpts = { method, path, headers, timeout: timeoutMs };
 
     let reqRef = null;
+    let tlsSocketRef = null; // CONNECT 隧道阶段 reqRef 尚未创建，abort 时需直接销毁 TLS socket
     let settled = false;
     const finish = (fn, val) => {
       if (settled) return;
@@ -102,6 +103,7 @@ function request(opts) {
 
     function onAbort() {
       if (reqRef && !reqRef.destroyed) reqRef.destroy(new Error('已取消'));
+      if (tlsSocketRef && !tlsSocketRef.destroyed) tlsSocketRef.destroy();
     }
     if (signal) {
       if (signal.aborted) return reject(new Error('已取消'));
@@ -133,6 +135,7 @@ function request(opts) {
             reqRef.on('error', (e) => finish(reject, e));
             reqRef.end(body);
           });
+          tlsSocketRef = tlsSocket;
           tlsSocket.on('error', (e) => finish(reject, e));
         });
         // 代理“接住 TCP 但不回 CONNECT 响应”时，conn 既不 emit error 也不进 connect，

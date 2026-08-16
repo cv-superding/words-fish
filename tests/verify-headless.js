@@ -9,7 +9,6 @@ const path = require('path');
 const Module = require('module');
 
 const ROOT = path.resolve(__dirname, '..');
-const HERE = __dirname;
 const os = require('os');
 const TMP = path.join(os.tmpdir(), 'wf-verify-' + Date.now());
 require('fs').mkdirSync(TMP, { recursive: true });
@@ -21,8 +20,10 @@ class FakeBrowserWindow {
     this._w = opts.width || 380;
     this._h = opts.height || 240;
     this._visible = false;
-    this.webContents = { send() {} };
+    this.webContents = { send() {}, on() {}, once() {} };
   }
+  // ipc.js 的 gesture:fire 用它判断来源窗口；桩返回 null = 非弹出窗口（来源按 bubble 处理）
+  static fromWebContents() { return null; }
   isDestroyed() { return false; }
   setAlwaysOnTop() {}
   setVisibleOnAllWorkspaces() {}
@@ -233,8 +234,11 @@ setImmediate(async () => {
 
 function finish(code) {
   if (fails.length) logLine('失败项: ' + fails.join(' | '));
+  // 报告写到系统临时目录（TMP 已在顶部创建），不污染源码目录
+  const reportPath = path.join(TMP, 'verify-report.txt');
   try {
-    require('fs').writeFileSync(path.join(HERE, 'verify-report.txt'), report.join('\n'), 'utf8');
+    require('fs').writeFileSync(reportPath, report.join('\n'), 'utf8');
+    console.log('[verify] report ->', reportPath);
   } catch (e) {}
   // 杀掉可能残留的定时器（tray 15s 刷新 / scheduler）
   process.exit(code);

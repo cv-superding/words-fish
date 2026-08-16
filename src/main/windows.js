@@ -15,6 +15,9 @@ let bubbleWin = null;
 let settingsWin = null;
 let knowledgeWin = null;
 let bubbleTimer = null;
+let bubbleFadeTimer = null; // 淡出 → 隐藏 的二级定时器，需要与 bubbleTimer 一起管理
+let popupReady = false;
+let popupPending = []; // popup 首次加载完成前排队的消息
 
 /* ------------------------------ 工具 ------------------------------ */
 
@@ -85,6 +88,7 @@ function createPopup() {
   });
 
   popupWin.on('moved', () => {
+    if (!popupWin || popupWin.isDestroyed()) return;
     if (!config.get('popup.rememberPosition')) return;
     const [x, y] = popupWin.getPosition();
     config.update({ popup: { position: { x, y } } }, { silentReload: true });
@@ -104,9 +108,24 @@ function createPopup() {
     }
   });
 
+  // 首次加载完成前渲染层还没有注册 IPC 监听，此时发往 popup 的消息先排队，
+  // did-finish-load 后统一补发，避免首次弹出空白悬浮窗
+  popupReady = false;
+  popupPending = [];
+  popupWin.webContents.on('did-finish-load', () => {
+    popupReady = true;
+    const q = popupPending;
+    popupPending = [];
+    for (const [channel, payload] of q) {
+      if (popupWin && !popupWin.isDestroyed()) popupWin.webContents.send(channel, payload);
+    }
+  });
+
   popupWin.on('closed', () => {
     popupWin = null;
     popupUserResized = false;
+    popupReady = false;
+    popupPending = [];
   });
 
   return popupWin;
@@ -170,7 +189,11 @@ function resizePopup(width, height, force = false) {
   // 用户手动缩放后，不再被 scheduleResize 缩回去
   // force=true 用于 grip 拖拽过程中，允许自由缩小
   if (!force && popupUserResized) {
-    const savedSize = config.get('popup.size', {});
+    // 按当前视图取对应的持久化尺寸做下限，避免知识视图被单词视图的尺寸压回去
+    const view = config.get('popup.view', 'word');
+    const savedSize = view === 'knowledge'
+      ? config.get('popup.knowledgeSize', {})
+      : config.get('popup.size', {});
     if (Number.isFinite(savedSize.width) && savedSize.width >= 280) w = Math.max(w, savedSize.width);
     if (Number.isFinite(savedSize.height) && savedSize.height >= 180) h = Math.max(h, savedSize.height);
   }
@@ -227,12 +250,15 @@ function showBubble(durationSec) {
   win.setAlwaysOnTop(true, 'screen-saver');
 
   clearTimeout(bubbleTimer);
+  clearTimeout(bubbleFadeTimer);
   const sec = durationSec ?? config.get('push.bubbleDurationSec', 12);
   if (sec > 0) {
     bubbleTimer = setTimeout(() => {
       if (bubbleWin && !bubbleWin.isDestroyed()) {
         bubbleWin.webContents.send('bubble:fadeout');
-        setTimeout(() => hideBubble(), 320);
+        // 单独跟踪这个二级定时器：用户续命（holdBubble）或新推送（showBubble）时须一并取消，
+        // 否则会把刚续命/刚弹出的气泡误隐藏
+        bubbleFadeTimer = setTimeout(() => hideBubble(), 320);
       }
     }, sec * 1000);
   }
@@ -241,11 +267,13 @@ function showBubble(durationSec) {
 
 function hideBubble() {
   clearTimeout(bubbleTimer);
+  clearTimeout(bubbleFadeTimer);
   if (bubbleWin && !bubbleWin.isDestroyed() && bubbleWin.isVisible()) bubbleWin.hide();
 }
 
 function holdBubble() {
   clearTimeout(bubbleTimer);
+  clearTimeout(bubbleFadeTimer);
 }
 
 function resizeBubble(width, height) {
@@ -357,6 +385,11 @@ function toggleKnowledge() {
 /* ------------------------------ 广播 ------------------------------ */
 
 function send(target, channel, payload) {
+  // popup 首次加载未完成时排队，等 did-finish-load 后补发
+  if (target === 'popup' && popupWin && !popupWin.isDestroyed() && !popupReady) {
+    popupPending.push([channel, payload]);
+    return;
+  }
   const map = { popup: popupWin, bubble: bubbleWin, settings: settingsWin, knowledge: knowledgeWin };
   const win = map[target];
   if (win && !win.isDestroyed()) win.webContents.send(channel, payload);

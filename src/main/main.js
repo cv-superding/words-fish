@@ -100,9 +100,5 @@ app.on('before-quit', () => {
   knowledge.saveNow();
 });
 
-process.on('uncaughtException', (err) => {
-  logCrash('uncaughtException', err);
-});
-process.on('unhandledRejection', (err) => {
-  logCrash('unhandledRejection', err);
-});
+// uncaughtException / unhandledRejection 已在文件头部（require electron 之前）注册，
+// 这里不再重复注册，否则同一错误会弹两次崩溃框。

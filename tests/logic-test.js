@@ -9,17 +9,25 @@ const paths = require(path.join(ROOT, 'src/main/paths'));
 
 // 测试隔离：清理上一轮（可能因报错提前退出而未清理）残留的自动生成自定义词库
 // 注：部分沙箱环境带 safe-delete 拦截，unlink/rm 会被改写并报错，且回收站后端不稳定、
-// 偶尔删不干净导致 u_*.json 残留并污染 listBooks 计数。改为「改名隔离」——
-// 把 u_*.json 改名成 ._trash_u_*.json，listBooks 仅匹配 u_*.json，改名后即不再被统计，
-// 与删除等效且稳定。正常 CI 环境（无 safe-delete）改名后文件也不影响断言。
+// 偶尔删不干净导致残留并污染 listBooks 计数。改为「改名隔离」——
+// 注意必须改成非 .json 后缀（dict.listCustom 会扫描所有 *.json），
+// 旧版本改名成 ._trash_u_*.json 仍以 .json 结尾、依旧被计数，这里一并迁移/清理。
 function cleanCustomDicts() {
   try {
     const dir = paths.customDictDir;
     if (!fs.existsSync(dir)) return;
     for (const f of fs.readdirSync(dir)) {
       if (/^u_.*\.json$/.test(f)) {
-        try { fs.renameSync(path.join(dir, f), path.join(dir, '._trash_' + f)); }
+        try { fs.renameSync(path.join(dir, f), path.join(dir, '._trash_' + f + '.trash')); }
         catch (e) { try { fs.rmSync(path.join(dir, f), { recursive: true, force: true }); } catch (e2) { /* ignore */ } }
+      } else if (f.startsWith('._trash_')) {
+        // 清掉历史残留（含旧命名 ._trash_u_*.json 与本轮之前生成的 .trash）
+        try { fs.rmSync(path.join(dir, f), { recursive: true, force: true }); }
+        catch (e) {
+          if (f.endsWith('.json')) {
+            try { fs.renameSync(path.join(dir, f), path.join(dir, f + '.trash')); } catch (e2) { /* ignore */ }
+          }
+        }
       }
     }
   } catch (e) { /* ignore */ }
@@ -229,7 +237,10 @@ try {
   const before = fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => /^u_.*\.json$/.test(f)).length : 0;
   cleanCustomDicts();
   const after = fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => /^u_.*\.json$/.test(f)).length : 0;
-  total++; passed++; ok(`清理 ${before} 个临时自定义词库（剩余 u_ ${after}）`);
+  // 真实校验：清理后不允许残留任何 u_*.json（cleanCustomDicts 用改名隔离，失败才可能残留）
+  total++;
+  if (after === 0) { passed++; ok(`清理 ${before - after} 个临时自定义词库（剩余 u_ ${after}）`); }
+  else fail(`清理后仍残留 ${after} 个 u_*.json`);
 } catch (e) { fail(e.message); }
 
 console.log(`\n=== 总结 ===\n通过 ${passed}/${total}`);

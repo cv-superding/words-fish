@@ -41,7 +41,14 @@ function readCfgFromUI() {
     const path = el.dataset.cfg;
     let val;
     if (el.type === 'checkbox') val = el.checked;
-    else if (el.type === 'number') val = el.tagName === 'INPUT' ? (parseFloat(el.value) || 0) : el.value;
+    else if (el.type === 'number') {
+      if (el.tagName === 'INPUT') {
+        // 清空（NaN）不保存；0 是合法值（如透明度调到 0），不能 || 0 一刀切
+        const v = parseFloat(el.value);
+        if (Number.isNaN(v)) return;
+        val = v;
+      } else val = el.value;
+    }
     else val = el.value;
     setNested(out, path, val);
   });
@@ -642,5 +649,5 @@ async function init() {
 
 init().catch((e) => {
   console.error(e);
-  document.body.innerHTML = `<pre style="padding:20px;color:#d85a30">初始化失败：${e.message}\n${e.stack}</pre>`;
+  document.body.innerHTML = `<pre style="padding:20px;color:#d85a30">初始化失败：${esc(e.message)}\n${esc(e.stack)}</pre>`;
 });
