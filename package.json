@@ -1,6 +1,6 @@
 {
   "name": "words-fish",
-  "version": "1.2.3",
+  "version": "1.2.5",
   "description": "摸鱼背单词 - Windows 桌面碎片化英语单词记忆工具（托盘通知 + 全局快捷键悬浮窗）",
   "main": "src/main/main.js",
   "author": "cv-superding",
@@ -14,7 +14,10 @@
     "url": "https://github.com/cv-superding/words-fish/issues"
   },
   "scripts": {
-    "pack": "electron-builder --win --dir"
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "pack": "electron-builder --win --dir",
+    "build": "electron-builder --win --publish=never"
   },
   "build": {
     "appId": "com.wordsfish.app",
@@ -34,8 +37,12 @@
       "icon": "assets/icon.ico"
     },
     "directories": {
-      "output": "app-v20",
+      "output": "app-v24",
       "buildResources": "assets"
     }
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
   }
 }

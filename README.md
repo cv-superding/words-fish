@@ -712,6 +712,15 @@ npm run test:llm
 
 ## 📝 更新日志
 
+### v1.2.5（2026-08-19）
+- 🔴 **滚轮切词彻底终结（物理级修复）**：用户多次反馈「滚轮切换下一个单词」关不掉。根因不在源码默认值，而在 `AppData/Roaming/words-fish/config.json` 里被旧版本固化的 `wheelUp/wheelDown: prevWord/nextWord` 通过 `deepMerge(DEFAULTS, raw)` **覆盖了源码默认 `none`**——重启电脑也无效，因为磁盘文件一直在
+  - ✅ 修改磁盘配置文件 `wheelUp/wheelDown` → `none`
+  - ✅ 源码 `popup.js` wheel 监听**物理移除** `fireGesture` 调用（仅保留 `stopPropagation`），滚轮永远只滚动释义文本，任何配置都无法再让滚轮切词
+- 🛠 加固 `摸鱼背单词.bat` 启动器：默认 `taskkill` 所有 `WordsFish.exe` 再启动，避免单实例锁把旧窗口顶到前台
+- 🚫 项目内旧版 `app-v20 / app-v21 / app-v22` 的 `WordsFish.exe` 已 `rename` 为 `WordsFish_DISABLED.exe`，双击旧文件打不开旧切词版
+- 📚 排查要点：userData 配置目录（`words-fish` / `WordsFish` / `com.wordsfish.app` / `.tmp/userData`）会覆盖源码默认，配置类问题先查这四处
+- 🧪 新增 `tests/verify-renderer-wheel.js`：用 jsdom 桩验证 wheel 监听→fireGesture 派发链路，覆盖「首个词未加载时手势静默失效」等边界
+
 ### v1.2.4（2026-08-08）
 - 🔴 **重写全屏检测（高优先级修复）**：`scheduler.js` 改用 PowerShell P/Invoke 检测前台窗口是否**真正全屏**（尺寸≈主屏，留 4px 容差；最大化不计入），彻底移除 Teams / WeMeet / WebEx / PowerPoint 后台进程热名单——之前这些进程只要在后台运行就误判「在开会」而暂停推送，现已只看前台窗口是否真的铺满屏幕
 - 🟠 修复**配置双重广播**：`config:update` 删除重复的显式广播，统一由 `config.onChange` 监听器单点推送，避免渲染层重复刷新

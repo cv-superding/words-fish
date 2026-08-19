@@ -220,8 +220,10 @@ function setupKnowledgeWebview() {
 
 function fireGesture(gesture) {
   if (!gesture || gesture === 'none') return;
-  const action = state.gestures[gesture];
-  if (!action || action === 'none') return;
+  // 手势名→动作的映射以主进程 config 为准（单一事实来源）。
+  // 不再依赖渲染层 state.gestures：该表仅在「单词 payload 非空」时才会被填充，
+  // 首个词尚未加载（api.current() 返回 null）时它是空对象，会让滚轮 / 双击等
+  // 手势被前端静默丢弃——而主进程其实能正确解析。直接把手势名交给主进程判定。
   api.fireGesture(gesture).catch(() => {});
 }
 
@@ -405,18 +407,10 @@ api.onConfig(({ section }) => {
 
 window.addEventListener('resize', scheduleResize);
 
-// 滚轮手势：config 里 wheelUp/wheelDown 可映射到 prevWord/nextWord，
-// 按 deltaY 方向触发（fireGesture 内部查映射，未映射/none 等于无操作）。
-// 仍显式 stopPropagation（不 preventDefault，内容区自身的滚动不受影响），
-// 400ms 节流防止一次滚动连发多次切词。
-let lastWheelGestureAt = 0;
+// 滚轮：只滚动释义文本，不触发任何手势（用户明确要求禁用滚轮切词）。
+// 不 preventDefault，内容区原生滚动不受影响。
 window.addEventListener('wheel', (e) => {
   e.stopPropagation();
-  if (!e.deltaY) return;
-  const now = Date.now();
-  if (now - lastWheelGestureAt < 400) return;
-  lastWheelGestureAt = now;
-  fireGesture(e.deltaY < 0 ? 'wheelUp' : 'wheelDown');
 }, { passive: true });
 
 (async () => {

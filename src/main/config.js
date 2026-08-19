@@ -65,8 +65,8 @@ const DEFAULTS = {
     dblclick: 'close',
     rightclick: 'markUnknown',
     middleclick: 'toggleMeaning',
-    wheelUp: 'prevWord',
-    wheelDown: 'nextWord',
+    wheelUp: 'none',
+    wheelDown: 'none',
     longpress: 'openSettings',
   },
 
